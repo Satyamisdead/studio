@@ -8,6 +8,7 @@ import FileExplorer from "@/components/FileExplorer";
 import CodeViewer from "@/components/CodeViewer";
 import FeedbackForm from "@/components/FeedbackForm";
 import DownloadButton from "@/components/DownloadButton";
+import RunProjectButton from "@/components/RunProjectButton"; // Import the new component
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ErrorMessage from "@/components/ErrorMessage";
 import WelcomeMessage from "@/components/WelcomeMessage";
@@ -35,10 +36,10 @@ export default function StudioPage() {
     setOriginalPrompt(prompt);
 
     const result = await handleGenerateScaffold(prompt);
-    if (result.files) { // This covers files array being present, including empty
+    if (result.files) { 
       setGeneratedFiles(result.files);
       if (result.files.length > 0) {
-        setSelectedFile(result.files[0]); // Select the first file by default
+        setSelectedFile(result.files[0]); 
         toast({ title: "App Scaffold Generated!", description: "Review the files and code." });
       } else {
         toast({ title: "Empty Scaffold Generated", description: "The AI generated an empty project. You can provide feedback or try a new prompt.", variant: "default" });
@@ -51,7 +52,7 @@ export default function StudioPage() {
   };
 
   const onFeedbackSubmit = async (feedback: string) => {
-    if (!originalPrompt || generatedFiles.length === 0 && !originalPrompt) { // Allow feedback even if initial generation was empty
+    if (!originalPrompt || generatedFiles.length === 0 && !originalPrompt) { 
       setError("Cannot submit feedback without an initial prompt attempt.");
       toast({ title: "Feedback Error", description: "Please attempt to generate an app first.", variant: "destructive" });
       return;
@@ -62,13 +63,13 @@ export default function StudioPage() {
     const currentFilesJson = JSON.stringify(generatedFiles);
     const result = await handleImproveScaffold(currentFilesJson, feedback, originalPrompt);
 
-    if (result.files) { // This covers files array being present, including empty
+    if (result.files) { 
       setGeneratedFiles(result.files);
       if (result.files.length > 0) {
-        setSelectedFile(result.files[0]);
+        const currentSelectedStillExists = result.files.find(f => f.name === selectedFile?.name);
+        setSelectedFile(currentSelectedStillExists || result.files[0]);
       } else {
         setSelectedFile(null);
-        // Optionally, toast if AI returns no files after feedback
         toast({ title: "No Changes Suggested", description: "The AI processed your feedback but returned no files. The project might be empty or unchanged.", variant: "default" });
       }
       toast({ title: "Scaffold Improved!", description: "The application scaffold has been updated based on your feedback." });
@@ -79,6 +80,10 @@ export default function StudioPage() {
     setIsLoading(false);
   };
 
+  const projectNameForActions = React.useMemo(() => {
+    return originalPrompt.substring(0,30).replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || "ai-generated-app";
+  }, [originalPrompt]);
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground font-body">
@@ -88,7 +93,7 @@ export default function StudioPage() {
           {/* --- Left Column: Inputs --- */}
           <div className="lg:col-span-4 space-y-6">
             <PromptForm onSubmit={onPromptSubmit} isLoading={isLoading} />
-            { (originalPrompt || generatedFiles.length > 0) && !isLoading && ( /* Allow feedback if a prompt was submitted, even if it resulted in empty files */
+            { (originalPrompt || generatedFiles.length > 0) && !isLoading && (
               <FeedbackForm onSubmit={onFeedbackSubmit} isLoading={isLoading} />
             )}
           </div>
@@ -98,7 +103,7 @@ export default function StudioPage() {
             {isLoading && <LoadingSpinner text={isLoading ? "AI is thinking..." : "Loading..."} />}
             {error && !isLoading && <ErrorMessage message={error} />}
             
-            {!isLoading && generatedFiles.length === 0 && !error && !originalPrompt && ( /* Show welcome only if no prompt attempt yet */
+            {!isLoading && generatedFiles.length === 0 && !error && !originalPrompt && (
               <WelcomeMessage />
             )}
 
@@ -110,9 +115,12 @@ export default function StudioPage() {
                       <FileOutput className="mr-2 h-6 w-6 text-primary"/>
                       Generated Application
                     </CardTitle>
-                    <DownloadButton files={generatedFiles} projectName={originalPrompt.substring(0,20).replace(/\s/g, '-').toLowerCase() || "ai-generated-app"} />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <RunProjectButton files={generatedFiles} projectName={projectNameForActions} isLoading={isLoading} />
+                      <DownloadButton files={generatedFiles} projectName={projectNameForActions} />
+                    </div>
                   </div>
-                  <CardDescription>Review the generated files and code. Select a file to view its content.</CardDescription>
+                  <CardDescription>Review the generated files and code. Select a file to view its content. You can run the project in StackBlitz or download it.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -128,7 +136,7 @@ export default function StudioPage() {
                 </CardContent>
               </Card>
             )}
-             {!isLoading && generatedFiles.length === 0 && originalPrompt && !error && ( /* Case where generation resulted in no files */
+             {!isLoading && generatedFiles.length === 0 && originalPrompt && !error && (
               <Card className="shadow-xl">
                 <CardHeader>
                   <CardTitle className="font-headline text-xl">No Files Generated</CardTitle>
