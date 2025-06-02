@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -20,8 +21,8 @@ const GenerateAppScaffoldOutputSchema = z.object({
   files: z
     .array(
       z.object({
-        name: z.string().describe('The name of the file.'),
-        content: z.string().describe('The content of the file.'),
+        name: z.string().describe('The full path and name of the file (e.g., "src/app/page.tsx").'),
+        content: z.string().describe('The complete content of the file.'),
       })
     )
     .describe('An array of files that make up the web application scaffold.'),
@@ -36,11 +37,23 @@ const prompt = ai.definePrompt({
   name: 'generateAppScaffoldPrompt',
   input: {schema: GenerateAppScaffoldInputSchema},
   output: {schema: GenerateAppScaffoldOutputSchema},
-  prompt: `You are an expert web application developer.  You will generate a basic, functional web application scaffold, including all necessary code files (HTML, CSS, JavaScript/Next.js) based on the user's prompt.
+  prompt: `You are an expert web application developer. Your task is to generate a basic, functional web application scaffold based on the user's prompt.
+The scaffold should include all necessary code files (e.g., Next.js/React components, Tailwind CSS, utility files).
+The generated code must be well-structured, readable, and follow modern web development best practices.
+Ensure that the generated files constitute a complete and runnable application.
 
-  The generated code should be well-structured, readable, and follow modern web development best practices.  Ensure that the generated files are a complete and runnable application.
+You MUST output your response as a JSON object matching the following Zod schema:
+{{output_schema}}
 
-  Prompt: {{{prompt}}}`,
+Specifically, the output should be a JSON object with a single key "files".
+The value of "files" should be an array of objects, where each object has two keys:
+- "name": A string representing the full path and name of the file (e.g., "src/app/page.tsx", "src/components/MyComponent.tsx").
+- "content": A string containing the complete code for that file.
+
+Do not include any explanatory text or markdown formatting outside of the JSON object.
+The entire response must be only the valid JSON object.
+
+User Prompt: {{{prompt}}}`,
 });
 
 const generateAppScaffoldFlow = ai.defineFlow(

@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -34,12 +35,14 @@ export default function StudioPage() {
     setOriginalPrompt(prompt);
 
     const result = await handleGenerateScaffold(prompt);
-    if (result.files) {
+    if (result.files) { // This covers files array being present, including empty
       setGeneratedFiles(result.files);
       if (result.files.length > 0) {
         setSelectedFile(result.files[0]); // Select the first file by default
+        toast({ title: "App Scaffold Generated!", description: "Review the files and code." });
+      } else {
+        toast({ title: "Empty Scaffold Generated", description: "The AI generated an empty project. You can provide feedback or try a new prompt.", variant: "default" });
       }
-      toast({ title: "App Scaffold Generated!", description: "Review the files and code." });
     } else if (result.error) {
       setError(result.error);
       toast({ title: "Generation Error", description: result.error, variant: "destructive" });
@@ -48,9 +51,9 @@ export default function StudioPage() {
   };
 
   const onFeedbackSubmit = async (feedback: string) => {
-    if (!originalPrompt || generatedFiles.length === 0) {
-      setError("Cannot submit feedback without an initial generation.");
-      toast({ title: "Feedback Error", description: "Please generate an app first.", variant: "destructive" });
+    if (!originalPrompt || generatedFiles.length === 0 && !originalPrompt) { // Allow feedback even if initial generation was empty
+      setError("Cannot submit feedback without an initial prompt attempt.");
+      toast({ title: "Feedback Error", description: "Please attempt to generate an app first.", variant: "destructive" });
       return;
     }
     setIsLoading(true);
@@ -59,22 +62,17 @@ export default function StudioPage() {
     const currentFilesJson = JSON.stringify(generatedFiles);
     const result = await handleImproveScaffold(currentFilesJson, feedback, originalPrompt);
 
-    if (result.files) {
+    if (result.files) { // This covers files array being present, including empty
       setGeneratedFiles(result.files);
       if (result.files.length > 0) {
         setSelectedFile(result.files[0]);
       } else {
         setSelectedFile(null);
+        // Optionally, toast if AI returns no files after feedback
+        toast({ title: "No Changes Suggested", description: "The AI processed your feedback but returned no files. The project might be empty or unchanged.", variant: "default" });
       }
       toast({ title: "Scaffold Improved!", description: "The application scaffold has been updated based on your feedback." });
-    } else if (result.rawOutput) {
-      // Handle raw output display (e.g., single file or text)
-      setGeneratedFiles([{ name: "ai_improvement_output.txt", content: result.rawOutput }]);
-      setSelectedFile({ name: "ai_improvement_output.txt", content: result.rawOutput });
-      setError(result.error || "AI returned a non-standard response.");
-      toast({ title: "Feedback Processed", description: result.error || "AI returned a non-standard response. Check the output.", variant: "default" });
-    }
-    else if (result.error) {
+    } else if (result.error) {
       setError(result.error);
       toast({ title: "Improvement Error", description: result.error, variant: "destructive" });
     }
@@ -90,7 +88,7 @@ export default function StudioPage() {
           {/* --- Left Column: Inputs --- */}
           <div className="lg:col-span-4 space-y-6">
             <PromptForm onSubmit={onPromptSubmit} isLoading={isLoading} />
-            {generatedFiles.length > 0 && !isLoading && (
+            { (originalPrompt || generatedFiles.length > 0) && !isLoading && ( /* Allow feedback if a prompt was submitted, even if it resulted in empty files */
               <FeedbackForm onSubmit={onFeedbackSubmit} isLoading={isLoading} />
             )}
           </div>
@@ -100,7 +98,7 @@ export default function StudioPage() {
             {isLoading && <LoadingSpinner text={isLoading ? "AI is thinking..." : "Loading..."} />}
             {error && !isLoading && <ErrorMessage message={error} />}
             
-            {!isLoading && generatedFiles.length === 0 && !error && (
+            {!isLoading && generatedFiles.length === 0 && !error && !originalPrompt && ( /* Show welcome only if no prompt attempt yet */
               <WelcomeMessage />
             )}
 
@@ -128,6 +126,14 @@ export default function StudioPage() {
                     </div>
                   </div>
                 </CardContent>
+              </Card>
+            )}
+             {!isLoading && generatedFiles.length === 0 && originalPrompt && !error && ( /* Case where generation resulted in no files */
+              <Card className="shadow-xl">
+                <CardHeader>
+                  <CardTitle className="font-headline text-xl">No Files Generated</CardTitle>
+                  <CardDescription>The AI did not generate any files for your prompt. You can provide feedback to refine it or try a new prompt.</CardDescription>
+                </CardHeader>
               </Card>
             )}
           </div>
