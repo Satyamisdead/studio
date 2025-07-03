@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -23,9 +24,29 @@ const courses = [
   },
 ];
 
-export default function CoursesPage() {
+export default function HomePage() {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
+      {/* Banner Section */}
+      <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-lg overflow-hidden mb-8 shadow-2xl">
+        <Image
+          src="https://placehold.co/1200x400.png"
+          alt="Promotional Banner"
+          fill
+          className="object-cover z-0"
+          data-ai-hint="technology future"
+        />
+        <div className="absolute inset-0 bg-black/60 z-10 flex flex-col items-center justify-center text-center p-4">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white font-headline mb-4">
+            Unlock Your Potential
+          </h2>
+          <p className="text-lg md:text-xl text-gray-200 mb-6 max-w-2xl">
+            Join thousands of learners and professionals on Azoums to master new skills.
+          </p>
+          <Button size="lg">Explore Courses</Button>
+        </div>
+      </div>
+
       <div className="space-y-4 mb-8">
         <h1 className="text-3xl font-bold font-headline tracking-tight">Courses</h1>
         <p className="text-muted-foreground">
