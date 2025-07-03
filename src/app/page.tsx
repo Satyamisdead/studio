@@ -4,22 +4,22 @@ import Image from "next/image";
 
 const courses = [
   {
-    title: "Introduction to AI Development",
-    description: "Learn the fundamentals of AI and build your first intelligent application.",
+    title: "Learn AI",
+    description: "Master the fundamentals of AI and build your first intelligent applications.",
     image: "https://placehold.co/600x400.png",
-    hint: "artificial intelligence",
+    hint: "artificial intelligence robot",
   },
   {
-    title: "Advanced Next.js Techniques",
-    description: "Master server components, advanced routing, and performance optimization in Next.js.",
+    title: "Learn App Development",
+    description: "Dive deep into application development with modern frameworks and best practices.",
     image: "https://placehold.co/600x400.png",
-    hint: "web development",
+    hint: "mobile app code",
   },
   {
-    title: "UI/UX Design for Developers",
-    description: "Understand design principles to build beautiful and intuitive user interfaces.",
+    title: "Learn Website Development",
+    description: "Build beautiful, responsive, and high-performance websites from scratch.",
     image: "https://placehold.co/600x400.png",
-    hint: "design interface",
+    hint: "website design code",
   },
 ];
 
