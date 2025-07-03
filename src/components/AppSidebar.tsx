@@ -18,17 +18,13 @@ const authNavigation = [
     { name: 'Sign Up', href: '/sign-up', icon: UserPlus },
 ]
 
-interface AppSidebarProps {
-  onLinkClick?: () => void;
-}
-
-export default function AppSidebar({ onLinkClick }: AppSidebarProps) {
+export default function AppSidebar() {
   const pathname = usePathname();
 
   return (
     <div className="flex h-full flex-col bg-card">
       <div className="flex items-center border-b border-border/40 px-6" style={{minHeight: '65px'}}>
-        <Link href="/" className="flex items-center gap-2" onClick={onLinkClick}>
+        <Link href="/" className="flex items-center gap-2">
           <Zap className="h-8 w-8 text-primary" />
           <h1 className="text-xl font-bold font-headline">Azoums</h1>
         </Link>
@@ -39,7 +35,6 @@ export default function AppSidebar({ onLinkClick }: AppSidebarProps) {
             <Link
               key={item.name}
               href={item.href}
-              onClick={onLinkClick}
               className={cn(
                 'group flex items-center rounded-md px-3 py-2 text-base font-medium transition-colors',
                 pathname === item.href
@@ -59,7 +54,6 @@ export default function AppSidebar({ onLinkClick }: AppSidebarProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  onClick={onLinkClick}
                   className={cn(
                     'group flex items-center rounded-md px-3 py-2 text-base font-medium transition-colors',
                     pathname === item.href
