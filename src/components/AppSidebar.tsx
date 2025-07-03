@@ -12,13 +12,17 @@ const navigation = [
   { name: 'AI Studio', href: '/ai', icon: Wand2 },
 ];
 
-export default function AppSidebar() {
+interface AppSidebarProps {
+  onLinkClick?: () => void;
+}
+
+export default function AppSidebar({ onLinkClick }: AppSidebarProps) {
   const pathname = usePathname();
 
   return (
     <div className="flex h-full flex-col bg-card">
       <div className="flex items-center border-b border-border/40 px-6" style={{minHeight: '65px'}}>
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2" onClick={onLinkClick}>
           <Zap className="h-8 w-8 text-primary" />
           <h1 className="text-xl font-bold font-headline">Azoums</h1>
         </Link>
@@ -28,6 +32,7 @@ export default function AppSidebar() {
           <Link
             key={item.name}
             href={item.href}
+            onClick={onLinkClick}
             className={cn(
               'group flex items-center rounded-md px-3 py-2 text-base font-medium transition-colors',
               pathname === item.href

@@ -2,6 +2,9 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppSidebar from '@/components/AppSidebar';
+import MobileNav from '@/components/MobileNav';
+import Link from 'next/link';
+import { Zap } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Azoums Platform',
@@ -27,6 +30,13 @@ export default function RootLayout({
             <AppSidebar />
           </aside>
           <div className="flex flex-1 flex-col">
+            <header className="sticky top-0 z-10 flex h-[65px] items-center justify-between border-b border-border/40 bg-background/95 px-4 backdrop-blur-sm md:hidden">
+               <Link href="/" className="flex items-center gap-2">
+                <Zap className="h-8 w-8 text-primary" />
+                <span className="text-xl font-bold font-headline">Azoums</span>
+              </Link>
+              <MobileNav />
+            </header>
             <main className="flex-grow">
               {children}
             </main>
