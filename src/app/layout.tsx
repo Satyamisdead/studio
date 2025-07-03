@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -14,6 +15,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentYear = new Date().getFullYear();
+
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
@@ -35,7 +38,7 @@ export default function RootLayout({
               {children}
             </main>
             <footer className="text-center py-4 text-sm text-muted-foreground border-t hidden md:block">
-              Azoums Platform &copy; {new Date().getFullYear()}
+              Azoums Platform &copy; {currentYear}
             </footer>
           </div>
         </div>
