@@ -14,14 +14,19 @@ const navigation = [
   { name: 'AI Studio', href: '/ai', icon: Wand2 },
 ];
 
-const authNavigation = [
+const loggedInNav = [
     { name: 'Profile', href: '/profile', icon: User },
+]
+
+const loggedOutNav = [
     { name: 'Sign In', href: '/sign-in', icon: LogIn },
     { name: 'Sign Up', href: '/sign-up', icon: UserPlus },
 ]
 
 export default function AppSidebar() {
   const pathname = usePathname();
+  const isLoggedIn = false; // Mock authentication state
+  const authNavigation = isLoggedIn ? loggedInNav : loggedOutNav;
 
   return (
     <div className="flex h-full flex-col bg-card">

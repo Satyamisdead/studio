@@ -6,19 +6,23 @@ import { usePathname } from 'next/navigation';
 import { BookOpen, Briefcase, Building, User, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navigation = [
-  { name: 'Courses', href: '/', icon: BookOpen },
-  { name: 'Jobs', href: '/jobs', icon: Briefcase },
-  { name: 'Business', href: '/business', icon: Building },
-  { name: 'AI Studio', href: '/ai', icon: Wand2 },
-  { name: 'Account', href: '/profile', icon: User },
-];
-
 export default function BottomNav() {
   const pathname = usePathname();
+  const isLoggedIn = false; // Mock authentication state
+
+  const accountHref = isLoggedIn ? '/profile' : '/sign-in';
+
+  const navigation = [
+    { name: 'Courses', href: '/', icon: BookOpen },
+    { name: 'Jobs', href: '/jobs', icon: Briefcase },
+    { name: 'Business', href: '/business', icon: Building },
+    { name: 'AI Studio', href: '/ai', icon: Wand2 },
+    { name: 'Account', href: accountHref, icon: User },
+  ];
 
   const isActive = (href: string) => {
-    if (href === '/profile') {
+    // Special handling for the Account tab to stay active on all related pages
+    if (href === accountHref) {
       return ['/profile', '/sign-in', '/sign-up'].includes(pathname);
     }
     return pathname === href;
