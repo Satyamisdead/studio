@@ -66,7 +66,7 @@ export default function ProfilePage() {
                                 <User className="w-12 h-12" />
                             </AvatarFallback>
                         </Avatar>
-                        <CardTitle className="font-headline text-3xl">{user.displayName || "User Name"}</CardTitle>
+                        <CardTitle className="font-headline text-2xl md:text-3xl">{user.displayName || "User Name"}</CardTitle>
                         <CardDescription>{user.email}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">

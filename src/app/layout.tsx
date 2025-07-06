@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import AppSidebar from '@/components/AppSidebar';
 import BottomNav from '@/components/BottomNav';
 import { AuthProvider } from '@/hooks/use-auth';
+import PwaInstallPrompt from '@/components/PwaInstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Azoums Platform',
@@ -46,6 +47,7 @@ export default function RootLayout({
           </div>
           <BottomNav />
           <Toaster />
+          <PwaInstallPrompt />
         </AuthProvider>
       </body>
     </html>
