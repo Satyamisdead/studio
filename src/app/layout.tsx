@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppSidebar from '@/components/AppSidebar';
 import BottomNav from '@/components/BottomNav';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'Azoums Platform',
@@ -29,21 +30,23 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <div className="flex min-h-screen bg-background text-foreground">
-          <aside className="w-64 flex-shrink-0 border-r border-border/40 bg-card hidden md:flex flex-col">
-            <AppSidebar />
-          </aside>
-          <div className="flex flex-1 flex-col">
-            <main className="flex-grow pb-16 md:pb-0">
-              {children}
-            </main>
-            <footer className="text-center py-4 text-sm text-muted-foreground border-t hidden md:block">
-              Azoums Platform &copy; {currentYear}
-            </footer>
+        <AuthProvider>
+          <div className="flex min-h-screen bg-background text-foreground">
+            <aside className="w-64 flex-shrink-0 border-r border-border/40 bg-card hidden md:flex flex-col">
+              <AppSidebar />
+            </aside>
+            <div className="flex flex-1 flex-col">
+              <main className="flex-grow pb-16 md:pb-0">
+                {children}
+              </main>
+              <footer className="text-center py-4 text-sm text-muted-foreground border-t hidden md:block">
+                Azoums Platform &copy; {currentYear}
+              </footer>
+            </div>
           </div>
-        </div>
-        <BottomNav />
-        <Toaster />
+          <BottomNav />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

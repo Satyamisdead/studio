@@ -1,11 +1,13 @@
 
 "use client";
 
-import { BookOpen, Briefcase, Building, Wand2, Zap, LogIn, UserPlus, User } from 'lucide-react';
+import { BookOpen, Briefcase, Building, Wand2, Zap, LogIn, UserPlus, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from './ui/button';
 
 const navigation = [
   { name: 'Courses', href: '/', icon: BookOpen },
@@ -14,19 +16,16 @@ const navigation = [
   { name: 'AI Studio', href: '/ai', icon: Wand2 },
 ];
 
-const loggedInNav = [
-    { name: 'Profile', href: '/profile', icon: User },
-]
-
-const loggedOutNav = [
-    { name: 'Sign In', href: '/sign-in', icon: LogIn },
-    { name: 'Sign Up', href: '/sign-up', icon: UserPlus },
-]
-
 export default function AppSidebar() {
   const pathname = usePathname();
-  const isLoggedIn = false; // Mock authentication state
-  const authNavigation = isLoggedIn ? loggedInNav : loggedOutNav;
+  const { user, logout } = useAuth();
+
+  const authNavigation = user 
+    ? [{ name: 'Profile', href: '/profile', icon: User }]
+    : [
+        { name: 'Sign In', href: '/sign-in', icon: LogIn },
+        { name: 'Sign Up', href: '/sign-up', icon: UserPlus },
+      ];
 
   return (
     <div className="flex h-full flex-col bg-card">
@@ -72,6 +71,16 @@ export default function AppSidebar() {
                   <span>{item.name}</span>
                 </Link>
               ))}
+              {user && (
+                 <Button
+                    variant="ghost"
+                    onClick={logout}
+                    className="w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground px-3 py-2 text-base font-medium"
+                  >
+                    <LogOut className="mr-4 h-6 w-6 flex-shrink-0" />
+                    <span>Sign Out</span>
+                  </Button>
+              )}
             </nav>
         </div>
       </div>

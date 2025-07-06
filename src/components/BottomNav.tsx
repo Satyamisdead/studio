@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Briefcase, Building, User, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const isLoggedIn = false; // Mock authentication state
+  const { user } = useAuth();
 
-  const accountHref = isLoggedIn ? '/profile' : '/sign-in';
+  const accountHref = user ? '/profile' : '/sign-in';
 
   const navigation = [
     { name: 'Courses', href: '/', icon: BookOpen },
@@ -23,6 +24,7 @@ export default function BottomNav() {
   const isActive = (href: string) => {
     // Special handling for the Account tab to stay active on all related pages
     if (href === accountHref) {
+      if(user) return pathname.startsWith('/profile');
       return ['/profile', '/sign-in', '/sign-up'].includes(pathname);
     }
     return pathname === href;
