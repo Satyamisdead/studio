@@ -1,61 +1,105 @@
 
 "use client";
 
-import React, { useState, useEffect, useContext, createContext } from 'react';
+import React, { useState, useEffect, useContext, createContext, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, type UserCredential } from 'firebase/auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useToast } from './use-toast';
+
+// Define the data shapes here for clarity
+export interface SignUpData {
+  displayName: string;
+  email: string;
+  password: string;
+}
+
+export interface SignInData {
+  email: string;
+  password: string;
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<any>;
+  signInWithGoogle: () => Promise<UserCredential | void>;
+  signInWithEmail: (data: SignInData) => Promise<UserCredential | void>;
+  signUpWithEmail: (data: SignUpData) => Promise<UserCredential | void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
+  const getFirebaseErrorMessage = (error: any) => {
+    switch (error.code) {
+      case 'auth/invalid-email': return 'Please enter a valid email address.';
+      case 'auth/user-not-found':
+      case 'auth/wrong-password': return 'Invalid email or password. Please try again.';
+      case 'auth/email-already-in-use': return 'An account with this email address already exists.';
+      case 'auth/weak-password': return 'The password is too weak. Please use at least 6 characters.';
+      default: return error.message || "An unexpected error occurred.";
+    }
+  }
+  
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       router.push('/profile');
       return result;
-    } catch (error) {
-      console.error("Error signing in with Google: ", error);
+    } catch (error: any) {
+      toast({ title: "Sign-in Error", description: getFirebaseErrorMessage(error), variant: "destructive" });
     }
   };
+
+  const signUpWithEmail = async (data: SignUpData) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      await updateProfile(userCredential.user, { displayName: data.displayName });
+      router.push('/profile');
+      return userCredential;
+    } catch (error: any) {
+      toast({ title: "Sign-up Error", description: getFirebaseErrorMessage(error), variant: "destructive" });
+      throw error;
+    }
+  }
+
+  const signInWithEmail = async (data: SignInData) => {
+    try {
+      const result = await signInWithEmailAndPassword(auth, data.email, data.password);
+      router.push('/profile');
+      return result;
+    } catch (error: any) {
+      toast({ title: "Sign-in Error", description: getFirebaseErrorMessage(error), variant: "destructive" });
+      throw error;
+    }
+  }
 
   const logout = async () => {
     try {
       await signOut(auth);
       router.push('/sign-in');
-    } catch (error) {
-      console.error("Error signing out: ", error);
+    } catch (error: any) {
+      toast({ title: "Sign-out Error", description: getFirebaseErrorMessage(error), variant: "destructive" });
     }
   };
-  
-  const value = {
-    user,
-    loading,
-    signInWithGoogle,
-    logout,
-  };
+
+  const value = { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout };
 
   return (
     <AuthContext.Provider value={value}>
