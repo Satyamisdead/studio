@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useContext, createContext, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, type UserCredential } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, type UserCredential, deleteUser } from 'firebase/auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from './use-toast';
 
@@ -27,6 +27,7 @@ interface AuthContextType {
   signInWithEmail: (data: SignInData) => Promise<UserCredential | void>;
   signUpWithEmail: (data: SignUpData) => Promise<UserCredential | void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,6 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       case 'auth/wrong-password': return 'Invalid email or password. Please try again.';
       case 'auth/email-already-in-use': return 'An account with this email address already exists.';
       case 'auth/weak-password': return 'The password is too weak. Please use at least 6 characters.';
+      case 'auth/requires-recent-login': return 'This operation is sensitive and requires recent authentication. Please sign out and sign back in to delete your account.';
       default: return error.message || "An unexpected error occurred.";
     }
   }
@@ -99,7 +101,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const value = { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout };
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      toast({ title: "Error", description: "No user is currently signed in.", variant: "destructive" });
+      return;
+    }
+    try {
+      await deleteUser(currentUser);
+      toast({ title: "Account Deleted", description: "Your account has been permanently deleted." });
+      router.push('/sign-up');
+    } catch (error: any) {
+      console.error("Delete account error:", error);
+      toast({ title: "Deletion Error", description: getFirebaseErrorMessage(error), variant: "destructive" });
+    }
+  };
+
+  const value = { user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, deleteAccount };
 
   return (
     <AuthContext.Provider value={value}>

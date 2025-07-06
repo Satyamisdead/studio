@@ -6,11 +6,22 @@ import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { User, Award, ArrowUpCircle } from "lucide-react";
+import { User, Award, ArrowUpCircle, LogOut, Trash2 } from "lucide-react";
 import { useAuth } from '@/hooks/use-auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@/components/ui/alert-dialog"
 
 // Mock data for ranks
 const rankDetails = {
@@ -21,7 +32,7 @@ const rankDetails = {
 };
 
 export default function ProfilePage() {
-    const { user, loading } = useAuth();
+    const { user, loading, logout, deleteAccount } = useAuth();
     const router = useRouter();
 
     // Mock data for the user profile - will be enhanced with real data later
@@ -102,6 +113,35 @@ export default function ProfilePage() {
                              </p>
                         </div>
                     </CardContent>
+                    <CardFooter className="flex-col gap-4 p-6 pt-0 sm:flex-row sm:justify-end">
+                        <Button onClick={logout} variant="outline" className="w-full sm:w-auto">
+                            <LogOut className="mr-2 h-5 w-5" />
+                            Sign Out
+                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full sm:w-auto">
+                                    <Trash2 className="mr-2 h-5 w-5" />
+                                    Delete Account
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your
+                                    account and remove your data from our servers.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={deleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardFooter>
                 </Card>
             </div>
         </div>
