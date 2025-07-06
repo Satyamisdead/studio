@@ -71,13 +71,13 @@ export default function ProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         {/* Subscription Section */}
-                        <div className="p-4 rounded-lg bg-muted/50 flex items-center justify-between">
+                        <div className="p-4 rounded-lg bg-muted/50 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h3 className="font-semibold">Subscription</h3>
                                 <p className="text-muted-foreground">{userProfileData.subscription}</p>
                             </div>
-                            <Button>
-                                <ArrowUpCircle className="mr-2 h-5 w-5" />
+                            <Button size="sm">
+                                <ArrowUpCircle />
                                 Upgrade to Pro
                             </Button>
                         </div>
