@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -10,15 +11,15 @@ const navigation = [
   { name: 'Jobs', href: '/jobs', icon: Briefcase },
   { name: 'Business', href: '/business', icon: Building },
   { name: 'AI Studio', href: '/ai', icon: Wand2 },
-  { name: 'Account', href: '/sign-in', icon: User },
+  { name: 'Account', href: '/profile', icon: User },
 ];
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/sign-in') {
-      return pathname === '/sign-in' || pathname === '/sign-up';
+    if (href === '/profile') {
+      return ['/profile', '/sign-in', '/sign-up'].includes(pathname);
     }
     return pathname === href;
   };

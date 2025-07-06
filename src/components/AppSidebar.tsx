@@ -1,6 +1,7 @@
+
 "use client";
 
-import { BookOpen, Briefcase, Building, Wand2, Zap, LogIn, UserPlus } from 'lucide-react';
+import { BookOpen, Briefcase, Building, Wand2, Zap, LogIn, UserPlus, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ const navigation = [
 ];
 
 const authNavigation = [
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Sign In', href: '/sign-in', icon: LogIn },
     { name: 'Sign Up', href: '/sign-up', icon: UserPlus },
 ]
