@@ -26,7 +26,7 @@ const plans = [
   {
     name: "Pro",
     price: "€1",
-    priceId: "price_1PMb1b...", // Replace with your actual Stripe Price ID
+    priceId: "price_1PMb1b...", // This should be a real Stripe Price ID from your dashboard
     features: [
       "Full Access to All Courses",
       "Unlimited AI Studio Usage",
@@ -50,11 +50,19 @@ export default function UpgradePage() {
       return;
     }
 
+    if (!priceId || priceId.includes("...")) {
+      toast({
+          title: "Configuration Error",
+          description: "The Stripe Price ID is not set correctly. Please replace the placeholder value.",
+          variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // This is where you would call your backend to create a checkout session.
-      // We will simulate this by calling a placeholder API route.
+      // This calls your placeholder backend to simulate creating a checkout session.
       const res = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: {
@@ -64,25 +72,39 @@ export default function UpgradePage() {
       });
 
       if (!res.ok) {
-        throw new Error('Failed to create checkout session.');
+        const errorBody = await res.text();
+        throw new Error(`Failed to create checkout session: ${errorBody}`);
       }
       
       const { sessionId } = await res.json();
+
+      // **CRUCIAL CHECK**: Ensure a valid session ID was returned.
+      // This is a common point of failure. If your backend has an error,
+      // it might return a null or empty session ID.
+      if (!sessionId) {
+          throw new Error("Received an empty or invalid session ID from the server.");
+      }
       
       const stripe = await getStripe();
       if (!stripe) {
-        throw new Error("Stripe.js has not loaded yet.");
+        throw new Error("Stripe.js has not loaded yet. Check your network connection or Stripe key.");
       }
       
+      // Redirect to Stripe's hosted checkout page.
       const { error } = await stripe.redirectToCheckout({ sessionId });
 
+      // This part is only reached if `redirectToCheckout` fails (e.g., network error).
       if (error) {
-        console.error(error);
-        toast({ title: 'Checkout Error', description: error.message, variant: 'destructive' });
+        console.error("Stripe redirectToCheckout error:", error);
+        throw new Error(error.message);
       }
 
     } catch (error: any) {
-      toast({ title: 'Error', description: error.message || 'Something went wrong.', variant: 'destructive' });
+      toast({ 
+        title: 'Checkout Error', 
+        description: error.message || 'Something went wrong. Please try again.', 
+        variant: 'destructive' 
+      });
     } finally {
       setLoading(false);
     }
