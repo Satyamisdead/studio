@@ -50,15 +50,6 @@ export default function UpgradePage() {
       return;
     }
 
-    if (!priceId || priceId.includes("...")) {
-      toast({
-          title: "Configuration Error",
-          description: "The Stripe Price ID is not set correctly. Please replace the placeholder value.",
-          variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
