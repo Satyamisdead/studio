@@ -38,6 +38,10 @@ const plans = [
   },
 ];
 
+// The mock session ID from your placeholder API.
+// We use this to detect the simulation and show a helpful message.
+const MOCK_SESSION_ID = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6';
+
 export default function UpgradePage() {
   const { user, loading: userLoading } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -53,7 +57,6 @@ export default function UpgradePage() {
     setLoading(true);
 
     try {
-      // This calls your placeholder backend to simulate creating a checkout session.
       const res = await fetch('/api/stripe/checkout-session', {
         method: 'POST',
         headers: {
@@ -69,11 +72,19 @@ export default function UpgradePage() {
       
       const { sessionId } = await res.json();
 
-      // **CRUCIAL CHECK**: Ensure a valid session ID was returned.
-      // This is a common point of failure. If your backend has an error,
-      // it might return a null or empty session ID.
       if (!sessionId) {
           throw new Error("Received an empty or invalid session ID from the server.");
+      }
+      
+      // Check if we are in the simulation and show a helpful toast.
+      if (sessionId === MOCK_SESSION_ID) {
+        toast({
+            title: 'Simulation Mode',
+            description: 'This is a simulated checkout. A real backend is required to process payments.',
+            variant: 'default',
+            duration: 8000, // Show for 8 seconds
+        });
+        // We still proceed to show the Stripe error, which is the expected outcome of the simulation.
       }
       
       const stripe = await getStripe();
@@ -81,10 +92,8 @@ export default function UpgradePage() {
         throw new Error("Stripe.js has not loaded yet. Check your network connection or Stripe key.");
       }
       
-      // Redirect to Stripe's hosted checkout page.
       const { error } = await stripe.redirectToCheckout({ sessionId });
 
-      // This part is only reached if `redirectToCheckout` fails (e.g., network error).
       if (error) {
         console.error("Stripe redirectToCheckout error:", error);
         throw new Error(error.message);
