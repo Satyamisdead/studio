@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
         // In a real implementation, you'd get the priceId and user details from the request body
         const { priceId, userId, userEmail } = await req.json();
 
-        // This is a MOCK session ID. We've changed it to a live-like ID to match your live public key.
-        const mockSessionId = 'cs_live_a1B2c3d4E5f6G7h8I9j0';
+        // This is a MOCK session ID. We've corrected it to a valid live-like format.
+        const mockSessionId = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6';
         
         console.log(`Simulating checkout session creation for user ${userId} with price ${priceId}`);
 
