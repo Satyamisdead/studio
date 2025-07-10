@@ -22,6 +22,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
   } from "@/components/ui/alert-dialog"
+import Link from 'next/link';
 
 // Mock data for ranks
 const rankDetails = {
@@ -76,9 +77,11 @@ export default function ProfilePage() {
                                 <h3 className="font-semibold">Subscription</h3>
                                 <p className="text-muted-foreground">{userProfileData.subscription}</p>
                             </div>
-                            <Button size="sm">
-                                <ArrowUpCircle />
-                                Upgrade to Pro
+                            <Button size="sm" asChild>
+                                <Link href="/upgrade">
+                                 <ArrowUpCircle />
+                                  Upgrade to Pro
+                                </Link>
                             </Button>
                         </div>
 
