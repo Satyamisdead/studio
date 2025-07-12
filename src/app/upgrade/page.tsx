@@ -40,7 +40,7 @@ const plans = [
 
 // The mock session ID from your placeholder API.
 // We use this to detect the simulation and show a helpful message.
-const MOCK_SESSION_ID = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6';
+const MOCK_SESSION_ID = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0';
 
 export default function UpgradePage() {
   const { user, loading: userLoading } = useAuth();
@@ -96,7 +96,11 @@ export default function UpgradePage() {
 
       if (error) {
         console.error("Stripe redirectToCheckout error:", error);
-        throw new Error(error.message);
+        toast({ 
+          title: 'Checkout Error', 
+          description: error.message || 'This is a simulated checkout. A real backend is required to process payments.', 
+          variant: 'destructive' 
+        });
       }
 
     } catch (error: any) {

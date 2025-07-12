@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
         // In a real implementation, you'd get the priceId and user details from the request body.
         const { priceId, userId, userEmail } = await req.json();
 
-        // This is a MOCK session ID. We've corrected it to a valid live-like format.
-        // NOTE: Even with a correctly formatted mock ID, Stripe.js will likely reject it
+        // This is a MOCK session ID. It uses a valid live-like format.
+        // NOTE: Even with a correctly formatted mock ID, Stripe.js will reject it
         // because it's not a real, active session created on Stripe's servers.
         // This is why a real backend call is necessary.
-        const mockSessionId = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6';
+        const mockSessionId = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0';
         
         console.log(`Simulating checkout session creation for user ${userId} with price ${priceId}`);
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         // ================================================================================
         
         // For this placeholder, we return a mock ID.
-        // This is the source of the "Something went wrong" error.
+        // This is the source of the "Something went wrong" error from Stripe.
         return NextResponse.json({ sessionId: mockSessionId });
 
     } catch (err: any) {
