@@ -3,7 +3,7 @@
 
 import * as React from "react";
 import sdk from "@stackblitz/sdk";
-import { Play } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GeneratedFile } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -11,13 +11,20 @@ import { useToast } from "@/hooks/use-toast";
 interface RunProjectButtonProps {
   files: GeneratedFile[];
   projectName?: string;
-  isLoading: boolean;
+  onEmbed: () => void;
+  setIsEmbedding: (isEmbedding: boolean) => void;
 }
 
-export default function RunProjectButton({ files, projectName = "ai-generated-app", isLoading }: RunProjectButtonProps) {
+export default function RunProjectButton({
+  files,
+  projectName = "ai-generated-app",
+  onEmbed,
+  setIsEmbedding,
+}: RunProjectButtonProps) {
   const { toast } = useToast();
+  const [isClicked, setIsClicked] = React.useState(false);
 
-  const handleRunProject = () => {
+  const handleRunProject = async () => {
     if (files.length === 0) {
       toast({
         title: "Cannot Run Project",
@@ -26,20 +33,13 @@ export default function RunProjectButton({ files, projectName = "ai-generated-ap
       });
       return;
     }
+    
+    setIsClicked(true);
+    onEmbed(); // Signal to parent that embedding process has started
 
     const projectFiles: Record<string, string> = {};
     let packageJsonFound = false;
-    let entryFile = "src/app/page.tsx"; // Default entry file
-
-    if (files.length > 0) {
-        entryFile = files[0].name; // Use the first file as a fallback entry
-        const pageTsxFile = files.find(f => f.name.endsWith('page.tsx') || f.name.endsWith('page.js'));
-        if (pageTsxFile) entryFile = pageTsxFile.name;
-        const indexHtmlFile = files.find(f => f.name === 'index.html' || f.name === 'public/index.html');
-        if (indexHtmlFile) entryFile = indexHtmlFile.name;
-
-    }
-
+    let entryFile = "src/app/page.tsx";
 
     files.forEach(file => {
       projectFiles[file.name] = file.content;
@@ -48,94 +48,98 @@ export default function RunProjectButton({ files, projectName = "ai-generated-ap
       }
     });
 
+    const pageFile = files.find(f => f.name.endsWith('page.tsx') || f.name.endsWith('page.js'));
+    if (pageFile) entryFile = pageFile.name;
+
+
     if (!packageJsonFound) {
       projectFiles['package.json'] = JSON.stringify({
         name: projectName,
         version: '0.1.0',
         private: true,
         scripts: {
-          dev: 'next dev -p $PORT', // StackBlitz uses $PORT for Next.js
+          dev: 'next dev',
           build: 'next build',
-          start: 'next start -p $PORT',
+          start: 'next start',
           lint: 'next lint'
         },
         dependencies: {
-          'next': '15.2.3', // Pin to a known working version from this project
+          'next': '15.2.3',
           'react': '^18.3.1',
-          'react-dom': '^18.3.1'
-          // Tailwind and other common dependencies should be added by the AI if needed
+          'react-dom': '^18.3.1',
+          'tailwindcss': '^3.4.1',
+          'lucide-react': '^0.475.0',
+          '@radix-ui/react-slot': '^1.1.2',
+          'class-variance-authority': '^0.7.1',
+          'clsx': '^2.1.1',
+          'tailwind-merge': '^3.0.1',
+          'tailwindcss-animate': '^1.0.7',
         },
         devDependencies: {
           'typescript': '^5',
           '@types/node': '^20',
           '@types/react': '^18',
           '@types/react-dom': '^18',
-          'postcss': '^8', // Often needed for Next.js + Tailwind
-          'tailwindcss': '^3', // Often needed for Next.js + Tailwind
-          'autoprefixer': '^10' // Often needed for Next.js + Tailwind
+          'postcss': '^8',
+          'autoprefixer': '^10'
         }
       }, null, 2);
-      toast({
-        title: "Missing package.json",
-        description: "A default package.json was created for StackBlitz. The AI should ideally generate this file.",
-        variant: "default",
-      });
+       projectFiles['tailwind.config.ts'] = `
+        import type { Config } from 'tailwindcss'
+        const config: Config = {
+          content: [
+            './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+            './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+            './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+          ],
+          theme: { extend: {} },
+          plugins: [require("tailwindcss-animate")],
+        }
+        export default config`;
+       projectFiles['src/app/globals.css'] = `@tailwind base;\n@tailwind components;\n@tailwind utilities;`;
     }
-    
-    // Ensure a basic index.html exists if not a Next.js app with a pages router setup
-    // For Next.js with App Router, this isn't strictly necessary for `next dev`
-    // but can be a fallback for simpler projects.
-    if (!projectFiles['index.html'] && !projectFiles['public/index.html'] && !files.some(f => f.name.startsWith('src/app/'))) {
-        projectFiles['index.html'] = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${projectName}</title>
-</head>
-<body>
-  <div id="root"></div>
-  <p>If you see this, your Next.js app might not be configured correctly or is still building. Check the console.</p>
-  <script>
-    // Simple script to indicate loading, Next.js will take over #root
-    const rootDiv = document.getElementById('root');
-    if (rootDiv) rootDiv.innerHTML = 'Loading Next.js app...';
-  </script>
-</body>
-</html>`;
-    }
-
 
     try {
-      sdk.openProject({
-        title: projectName,
-        description: `Preview of AI-generated Next.js app: ${projectName}`,
-        template: 'node', // Node.js environment for Next.js
-        files: projectFiles,
-        settings: {
-          compile: {
-            trigger: 'auto',
-            clearConsole: false,
-          },
+      await sdk.embedProject(
+        'preview-embed',
+        {
+          title: projectName,
+          description: `Preview of AI-generated Next.js app: ${projectName}`,
+          template: 'node',
+          files: projectFiles,
+          dependencies: JSON.parse(projectFiles['package.json']).dependencies,
         },
-      }, {
-        openFile: entryFile, // Open the main page or first file
-        newWindow: true,
-        startCommand: 'npm install && npm run dev', // Standard command to install and run Next.js dev server
-      });
+        {
+          openFile: entryFile,
+          view: 'preview',
+          showSidebar: false,
+          hideExplorer: true,
+          clickToLoad: false,
+          terminalHeight: 0,
+        }
+      );
     } catch (error) {
-      console.error("Error opening project in StackBlitz:", error);
+      console.error("Error embedding project in StackBlitz:", error);
       toast({
         title: "StackBlitz Error",
-        description: `Could not open project in StackBlitz. ${error instanceof Error ? error.message : ''}`,
+        description: `Could not embed project. ${error instanceof Error ? error.message : ''}`,
         variant: "destructive",
       });
+    } finally {
+      setIsEmbedding(false);
     }
   };
 
   return (
-    <Button onClick={handleRunProject} disabled={isLoading || files.length === 0} variant="outline" className="bg-green-500 hover:bg-green-600 text-white">
-      <Play className="mr-2 h-4 w-4" />
-      Run Project
+    <Button 
+      onClick={handleRunProject} 
+      disabled={isClicked || files.length === 0} 
+      variant="outline" 
+      className="bg-green-500 hover:bg-green-600 text-white"
+    >
+      {isClicked ? <Loader2 className="mr-2 animate-spin" /> : <Eye className="mr-2" />}
+      {isClicked ? 'Embedding...' : 'Run Preview'}
     </Button>
   );
 }
+

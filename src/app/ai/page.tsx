@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -13,6 +14,9 @@ import WelcomeMessage from "@/components/WelcomeMessage";
 import { handleGenerateScaffold, handleImproveScaffold } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import type { GeneratedFile } from "@/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Code, Eye } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AiStudioPage() {
   const [isLoading, setIsLoading] = React.useState(false);
@@ -20,6 +24,9 @@ export default function AiStudioPage() {
   const [generatedFiles, setGeneratedFiles] = React.useState<GeneratedFile[]>([]);
   const [selectedFile, setSelectedFile] = React.useState<GeneratedFile | null>(null);
   const [originalPrompt, setOriginalPrompt] = React.useState("");
+  const [isPreviewing, setIsPreviewing] = React.useState(false);
+  const [isEmbedding, setIsEmbedding] = React.useState(false);
+
   const { toast } = useToast();
 
   const handleGenerate = async (prompt: string) => {
@@ -27,7 +34,9 @@ export default function AiStudioPage() {
     setError(null);
     setGeneratedFiles([]);
     setSelectedFile(null);
-    setOriginalPrompt(prompt); // Save the original prompt
+    setOriginalPrompt(prompt);
+    setIsPreviewing(false); 
+    setIsEmbedding(false);
 
     const result = await handleGenerateScaffold(prompt);
 
@@ -41,7 +50,6 @@ export default function AiStudioPage() {
     } else if (result.files) {
       setGeneratedFiles(result.files);
       if (result.files.length > 0) {
-        // Automatically select the first file, preferably page.tsx
         const pageFile = result.files.find(f => f.name.endsWith('page.tsx')) || result.files[0];
         setSelectedFile(pageFile);
       }
@@ -60,9 +68,10 @@ export default function AiStudioPage() {
     }
     setIsLoading(true);
     setError(null);
+    setIsPreviewing(false);
+    setIsEmbedding(false);
 
     const currentFilesJson = JSON.stringify(generatedFiles);
-
     const result = await handleImproveScaffold(currentFilesJson, feedback, originalPrompt);
 
     if (result.error) {
@@ -74,7 +83,6 @@ export default function AiStudioPage() {
       });
     } else if (result.files) {
       setGeneratedFiles(result.files);
-      // Try to keep the same file selected if it still exists, otherwise select the first one.
       const newSelectedFile = result.files.find(f => f.name === selectedFile?.name) || result.files[0] || null;
       setSelectedFile(newSelectedFile);
       toast({
@@ -84,7 +92,12 @@ export default function AiStudioPage() {
     }
     setIsLoading(false);
   };
-
+  
+  const handleRun = () => {
+    setIsPreviewing(true);
+    setIsEmbedding(true);
+    // The RunProjectButton will handle the actual embedding and call setIsEmbedding(false) when done.
+  };
 
   const hasGeneratedContent = generatedFiles.length > 0;
 
@@ -97,7 +110,6 @@ export default function AiStudioPage() {
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-        {/* Left Column: Forms */}
         <div className="lg:col-span-1 space-y-6">
           <PromptForm onSubmit={handleGenerate} isLoading={isLoading} initialPrompt={originalPrompt} />
           {hasGeneratedContent && !isLoading && (
@@ -105,7 +117,6 @@ export default function AiStudioPage() {
           )}
         </div>
 
-        {/* Right Column: Code Viewer & Files */}
         <div className="lg:col-span-2">
           {isLoading && <LoadingSpinner text="AI is building, please wait..." />}
           {error && !isLoading && <ErrorMessage message={error} />}
@@ -115,21 +126,49 @@ export default function AiStudioPage() {
           )}
 
           {hasGeneratedContent && !isLoading && !error && (
-            <div className="space-y-6">
+            <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   <DownloadButton files={generatedFiles} />
-                  <RunProjectButton files={generatedFiles} isLoading={isLoading} />
+                  <RunProjectButton 
+                    files={generatedFiles} 
+                    onEmbed={() => handleRun()}
+                    setIsEmbedding={setIsEmbedding}
+                  />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-1">
-                  <h3 className="text-lg font-semibold mb-2 font-headline">File Explorer</h3>
-                  <FileExplorer files={generatedFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
-                </div>
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-semibold mb-2 font-headline">Code Viewer</h3>
-                  <CodeViewer file={selectedFile} />
-                </div>
-              </div>
+              <Tabs defaultValue="code" onValueChange={(value) => setIsPreviewing(value === 'preview')} className="w-full">
+                <TabsList>
+                  <TabsTrigger value="code" disabled={isPreviewing && isEmbedding}>
+                    <Code className="mr-2" /> Code
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" disabled={!isPreviewing}>
+                    <Eye className="mr-2" /> Preview
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="code">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                    <div className="md:col-span-1">
+                      <h3 className="text-lg font-semibold mb-2 font-headline">File Explorer</h3>
+                      <FileExplorer files={generatedFiles} selectedFile={selectedFile} onSelectFile={setSelectedFile} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <h3 className="text-lg font-semibold mb-2 font-headline">Code Viewer</h3>
+                      <CodeViewer file={selectedFile} />
+                    </div>
+                  </div>
+                </TabsContent>
+                <TabsContent value="preview">
+                    <div className="mt-4 rounded-md border aspect-video w-full">
+                      {isEmbedding ? (
+                         <div className="flex flex-col items-center justify-center h-full space-y-4">
+                           <LoadingSpinner text="Embedding preview... this may take a moment."/>
+                           <p className="text-sm text-muted-foreground">StackBlitz is installing dependencies and starting the dev server.</p>
+                         </div>
+                      ) : (
+                        <div id="preview-embed" className="h-full w-full bg-background" />
+                      )}
+                    </div>
+                </TabsContent>
+              </Tabs>
             </div>
           )}
         </div>
@@ -137,3 +176,4 @@ export default function AiStudioPage() {
     </div>
   );
 }
+
