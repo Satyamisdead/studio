@@ -1,10 +1,14 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, CarouselDots } from "@/components/ui/carousel";
-import { courses } from "@/lib/courses";
+import { getCourses, Course } from "@/lib/firebase/courses";
 import Link from "next/link";
+import React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const banners = [
   {
@@ -34,7 +38,38 @@ const banners = [
 ];
 
 
+function CourseCardSkeleton() {
+    return (
+        <Card className="flex flex-col overflow-hidden w-full">
+            <CardHeader className="p-0">
+                <Skeleton className="w-full h-48" />
+            </CardHeader>
+            <CardContent className="flex-grow p-6 space-y-2">
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-1/2" />
+            </CardContent>
+            <CardFooter className="p-6 pt-0">
+                <Skeleton className="h-10 w-full" />
+            </CardFooter>
+        </Card>
+    )
+}
+
 export default function HomePage() {
+  const [courses, setCourses] = React.useState<Course[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+        setLoading(true);
+        const fetchedCourses = await getCourses();
+        setCourses(fetchedCourses);
+        setLoading(false);
+    }
+    fetchCourses();
+  }, []);
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       {/* Banner Section */}
@@ -83,29 +118,33 @@ export default function HomePage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => (
-          <Link href={`/courses/${course.slug}`} key={course.id} className="flex">
-            <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300 w-full">
-              <CardHeader className="p-0">
-                <Image
-                  src={course.image}
-                  alt={course.title}
-                  width={600}
-                  height={400}
-                  className="w-full h-48 object-cover"
-                  data-ai-hint={course.hint}
-                />
-              </CardHeader>
-              <CardContent className="flex-grow p-6 space-y-2">
-                <CardTitle className="font-headline text-xl">{course.title}</CardTitle>
-                <CardDescription>{course.description}</CardDescription>
-              </CardContent>
-              <CardFooter className="p-6 pt-0">
-                <Button className="w-full">View Course</Button>
-              </CardFooter>
-            </Card>
-          </Link>
-        ))}
+        {loading ? (
+             Array.from({ length: 3 }).map((_, i) => <CourseCardSkeleton key={i} />)
+        ) : (
+            courses.map((course) => (
+            <Link href={`/courses/${course.slug}`} key={course.id} className="flex">
+                <Card className="flex flex-col overflow-hidden shadow-lg hover:shadow-primary/20 transition-shadow duration-300 w-full">
+                <CardHeader className="p-0">
+                    <Image
+                    src={course.image}
+                    alt={course.title}
+                    width={600}
+                    height={400}
+                    className="w-full h-48 object-cover"
+                    data-ai-hint={course.hint}
+                    />
+                </CardHeader>
+                <CardContent className="flex-grow p-6 space-y-2">
+                    <CardTitle className="font-headline text-xl">{course.title}</CardTitle>
+                    <CardDescription>{course.description}</CardDescription>
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                    <Button className="w-full">View Course</Button>
+                </CardFooter>
+                </Card>
+            </Link>
+            ))
+        )}
       </div>
     </div>
   );

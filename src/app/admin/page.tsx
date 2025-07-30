@@ -53,6 +53,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Users, BookOpen, Briefcase, Building, PlusCircle, Pencil, Trash2, Home } from "lucide-react"
 import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUsers, addUser, updateUser, deleteUser, AppUser } from '@/lib/firebase/users';
+import { getCourses, addCourse, updateCourse, deleteCourse, Course, Lesson } from '@/lib/firebase/courses';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -73,10 +74,6 @@ const chartConfig = {
 }
 
 const mockData = {
-    courses: [
-        { id: 'crs_1', name: 'Learn AI', category: 'Technology', students: 1500 },
-        { id: 'crs_2', name: 'Learn App Development', category: 'Development', students: 1200 },
-    ],
     jobs: [
         { id: 'job_1', title: 'Frontend Developer', company: 'Tech Corp', status: 'Open' },
     ],
@@ -104,6 +101,7 @@ export default function AdminDashboardPage() {
 
 function AdminDashboardContent() {
   const { data: users, isLoading: usersLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers });
+  const { data: courses, isLoading: coursesLoading } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
   
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-8">
@@ -132,7 +130,7 @@ function AdminDashboardContent() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.courses.length}</div>
+             {coursesLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{courses?.length ?? 0}</div>}
             <p className="text-xs text-muted-foreground">+2 since last month</p>
           </CardContent>
         </Card>
@@ -189,7 +187,7 @@ function AdminDashboardContent() {
       <div className="space-y-6">
         <HomePageManagementSection banners={mockData.banners} hero={mockData.hero} />
         <ManagementSection title="Users Management" data={users} isLoading={usersLoading} type="user" />
-        <ManagementSection title="Course Management" data={mockData.courses} type="course" />
+        <ManagementSection title="Course Management" data={courses} isLoading={coursesLoading} type="course" />
         <ManagementSection title="Jobs Management" data={mockData.jobs} type="job" />
         <ManagementSection title="Business Management" data={mockData.business} type="business" />
         <StripeManagementSection />
@@ -209,7 +207,7 @@ interface ManagementSectionProps {
 function ManagementSection({ title, data, type, isLoading }: ManagementSectionProps) {
     const headers = {
         user: ['Name', 'Email', 'Role', 'Actions'],
-        course: ['Course Name', 'Category', 'Students', 'Actions'],
+        course: ['Course Title', 'XP', 'Lessons', 'Actions'],
         job: ['Job Title', 'Company', 'Status', 'Actions'],
         business: ['Solution Name', 'Status', 'Actions']
     }
@@ -230,7 +228,7 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
     const renderRow = (item: any) => {
         switch(type) {
             case 'user': return <><TableCell>{item.name}</TableCell><TableCell>{item.email}</TableCell><TableCell><Badge>{item.role || 'User'}</Badge></TableCell></>;
-            case 'course': return <><TableCell>{item.name}</TableCell><TableCell>{item.category}</TableCell><TableCell>{item.students}</TableCell></>;
+            case 'course': return <><TableCell>{item.title}</TableCell><TableCell>{item.xp}</TableCell><TableCell>{item.lessons?.length || 0}</TableCell></>;
             case 'job': return <><TableCell>{item.title}</TableCell><TableCell>{item.company}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
             case 'business': return <><TableCell>{item.name}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
         }
@@ -239,7 +237,7 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
     const renderForm = (item?: any) => {
         switch(type) {
             case 'user': return <UserForm currentUser={item} setOpen={setIsFormOpen} />;
-            case 'course': return <CourseForm course={item}/>;
+            case 'course': return <CourseForm currentCourse={item} setOpen={setIsFormOpen} />;
             case 'job': return <JobForm job={item} />;
             case 'business': return <BusinessForm business={item} />;
         }
@@ -248,19 +246,32 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => deleteUser(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users'] });
-            toast({ title: 'Success', description: 'User deleted successfully.' });
-        },
-        onError: (error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    const getDeleteMutation = () => {
+        switch(type) {
+            case 'user': return useMutation({
+                mutationFn: (id: string) => deleteUser(id),
+                onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+            });
+            case 'course': return useMutation({
+                mutationFn: (id: string) => deleteCourse(id),
+                onSuccess: () => queryClient.invalidateQueries({ queryKey: ['courses'] }),
+            });
+            default: return null;
         }
-    });
+    }
+
+    const deleteMutation = getDeleteMutation();
 
     const handleDelete = (id: string) => {
-        deleteMutation.mutate(id);
+        if (!deleteMutation) return;
+        deleteMutation.mutate(id, {
+            onSuccess: () => {
+                 toast({ title: 'Success', description: `${typeTitle} deleted successfully.` });
+            },
+            onError: (error) => {
+                toast({ title: 'Error', description: error.message, variant: 'destructive' });
+            }
+        });
     }
     
     const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
@@ -294,10 +305,10 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
                             <TableRow key={item.id}>
                                 {renderRow(item)}
                                 <TableCell className="space-x-2">
-                                    <Button variant="outline" size="icon" onClick={() => handleEditClick(item)} disabled={type !== 'user'}><Pencil className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="icon" onClick={() => handleEditClick(item)} disabled={type === 'job' || type === 'business'}><Pencil className="h-4 w-4" /></Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon" disabled={type !== 'user'}><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="destructive" size="icon" disabled={type === 'job' || type === 'business'}><Trash2 className="h-4 w-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -396,10 +407,39 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
     );
 }
 
-function CourseForm({ course }: { course?: any }) {
-    const [lessons, setLessons] = React.useState(course?.lessons || [{ title: '' }]);
+function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpen: (open: boolean) => void }) {
+    const [title, setTitle] = React.useState(currentCourse?.title || '');
+    const [description, setDescription] = React.useState(currentCourse?.description || '');
+    const [longDescription, setLongDescription] = React.useState(currentCourse?.longDescription || '');
+    const [xp, setXp] = React.useState(currentCourse?.xp || 0);
+    const [lessons, setLessons] = React.useState<Omit<Lesson,'id'>[]>(currentCourse?.lessons || [{ title: '', duration: '' }]);
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
 
-    const addLesson = () => setLessons([...lessons, { title: '' }]);
+    const mutation = useMutation({
+        mutationFn: (courseData: Omit<Course, 'id' | 'slug' | 'image' | 'hint'>) => currentCourse ? updateCourse(currentCourse.id, courseData) : addCourse(courseData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['courses']});
+            toast({ title: 'Success', description: `Course ${currentCourse ? 'updated' : 'added'} successfully.` });
+            setOpen(false);
+        },
+        onError: (error) => {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const courseData = { title, description, longDescription, xp: Number(xp), providesCertificate: true, lessons };
+        mutation.mutate(courseData);
+    };
+
+    const handleLessonChange = (index: number, field: 'title' | 'duration', value: string) => {
+        const newLessons = [...lessons];
+        newLessons[index][field] = value;
+        setLessons(newLessons);
+    }
+    const addLesson = () => setLessons([...lessons, { title: '', duration: '' }]);
     const removeLesson = (index: number) => {
         if (lessons.length > 1) {
             setLessons(lessons.filter((_, i) => i !== index));
@@ -407,28 +447,31 @@ function CourseForm({ course }: { course?: any }) {
     };
     
     return (
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-                <Label htmlFor="courseName">Course Name</Label>
-                <Input id="courseName" placeholder="e.g., Learn AI" defaultValue={course?.name}/>
+                <Label htmlFor="courseName">Course Title</Label>
+                <Input id="courseName" placeholder="e.g., Learn AI" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="courseDescription">Description</Label>
-                <Textarea id="courseDescription" placeholder="A comprehensive course about..." defaultValue={course?.description}/>
+                <Label htmlFor="courseDescription">Short Description</Label>
+                <Textarea id="courseDescription" placeholder="A short, catchy description for the course card." value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="videoUrl">Intro Video URL</Label>
-                <Input id="videoUrl" placeholder="https://example.com/video.mp4" defaultValue={course?.videoUrl}/>
+                <Label htmlFor="courseLongDescription">Full Description</Label>
+                <Textarea id="courseLongDescription" placeholder="A detailed description for the course page." value={longDescription} onChange={(e) => setLongDescription(e.target.value)} rows={5} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="bannerImage">Banner Image</Label>
-                <Input id="bannerImage" type="file" />
+                <Label htmlFor="xp">XP Reward</Label>
+                <Input id="xp" type="number" placeholder="e.g., 150" value={xp} onChange={(e) => setXp(Number(e.target.value))} />
             </div>
             <div className="space-y-2">
                 <Label>Lessons</Label>
-                {lessons.map((lesson: any, index: number) => (
-                     <div key={index} className="flex items-center gap-2">
-                       <Input placeholder={`Lesson ${index + 1} Title`} defaultValue={lesson.title} className="flex-grow"/>
+                {lessons.map((lesson, index) => (
+                     <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                       <div className="flex-grow space-y-2">
+                           <Input placeholder={`Lesson ${index + 1} Title`} value={lesson.title} onChange={(e) => handleLessonChange(index, 'title', e.target.value)} />
+                           <Input placeholder={`Duration (e.g., 15m)`} value={lesson.duration} onChange={(e) => handleLessonChange(index, 'duration', e.target.value)} />
+                       </div>
                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLesson(index)} disabled={lessons.length === 1}><Trash2 className="h-4 w-4"/></Button>
                     </div>
                 ))}
@@ -437,13 +480,14 @@ function CourseForm({ course }: { course?: any }) {
             </div>
             <DialogFooter>
                 <DialogClose asChild>
-                    <Button type="button" variant="secondary">Close</Button>
+                    <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Close</Button>
                 </DialogClose>
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
-        </div>
+        </form>
     );
 }
+
 
 function JobForm({ job }: { job?: any }) {
     return (

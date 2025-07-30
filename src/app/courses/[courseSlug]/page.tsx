@@ -1,17 +1,65 @@
 
+"use client";
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { courses } from '@/lib/courses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Award, Star, Clock, PlayCircle } from 'lucide-react';
+import { getCourseBySlug } from '@/lib/firebase/courses';
+import { useEffect, useState } from 'react';
+import type { Course } from '@/lib/firebase/courses';
+import { Skeleton } from '@/components/ui/skeleton';
+import LoadingSpinner from '@/components/LoadingSpinner';
+
+
+function CourseDetailSkeleton() {
+    return (
+        <div className="container mx-auto p-4 md:p-6 lg:p-8">
+             <Skeleton className="relative w-full h-64 md:h-80 lg:h-96 rounded-lg mb-8" />
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                    <Card>
+                        <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
+                        <CardContent><Skeleton className="h-20 w-full" /></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader><Skeleton className="h-8 w-1/2" /></CardHeader>
+                        <CardContent className="space-y-2">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="lg:col-span-1 space-y-8">
+                    <Card><CardContent className="p-6"><Skeleton className="h-12 w-full" /></CardContent></Card>
+                    <Card><CardContent className="p-6"><Skeleton className="h-20 w-full" /></CardContent></Card>
+                </div>
+             </div>
+        </div>
+    )
+}
+
 
 export default function CourseDetailPage({ params }: { params: { courseSlug: string } }) {
-  const course = courses.find(c => c.slug === params.courseSlug);
+  const [course, setCourse] = useState<Course | null | undefined>(undefined);
 
-  if (!course) {
+  useEffect(() => {
+    async function fetchCourse() {
+      const fetchedCourse = await getCourseBySlug(params.courseSlug);
+      setCourse(fetchedCourse);
+    }
+    fetchCourse();
+  }, [params.courseSlug]);
+
+  if (course === undefined) {
+    return <CourseDetailSkeleton />;
+  }
+
+  if (course === null) {
     notFound();
   }
 
@@ -59,7 +107,7 @@ export default function CourseDetailPage({ params }: { params: { courseSlug: str
             <CardContent>
               <Accordion type="single" collapsible className="w-full">
                 {course.lessons.map((lesson, index) => (
-                  <AccordionItem value={`item-${index}`} key={lesson.id}>
+                  <AccordionItem value={`item-${index}`} key={index}>
                     <AccordionTrigger>
                       <div className="flex items-center gap-4">
                          <PlayCircle className="h-5 w-5 text-primary" />
