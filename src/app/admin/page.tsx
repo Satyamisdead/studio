@@ -382,20 +382,18 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
     };
     
     return (
-        <form onSubmit={handleSubmit}>
-            <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} />
-                </div>
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} />
             </div>
             <DialogFooter>
                 <DialogClose asChild>
@@ -480,7 +478,7 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
             </div>
             <DialogFooter>
                 <DialogClose asChild>
-                    <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Close</Button>
+                    <Button type="button" variant="secondary">Close</Button>
                 </DialogClose>
                 <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
@@ -491,7 +489,7 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
 
 function JobForm({ job }: { job?: any }) {
     return (
-        <div className="space-y-4">
+        <form className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="jobTitle">Job Title</Label>
                 <Input id="jobTitle" placeholder="e.g., Frontend Developer" defaultValue={job?.title} />
@@ -522,13 +520,13 @@ function JobForm({ job }: { job?: any }) {
                 </DialogClose>
                 <Button type="submit">Save Changes</Button>
             </DialogFooter>
-        </div>
+        </form>
     )
 }
 
 function BusinessForm({ business }: { business?: any}) {
     return (
-        <div className="space-y-4">
+        <form className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="solutionName">Solution Name</Label>
                 <Input id="solutionName" placeholder="e.g., Business Solution A" defaultValue={business?.name} />
@@ -543,7 +541,7 @@ function BusinessForm({ business }: { business?: any}) {
                 </DialogClose>
                 <Button type="submit">Save Changes</Button>
             </DialogFooter>
-        </div>
+        </form>
     )
 }
 
@@ -589,7 +587,7 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
             </CardHeader>
             <CardContent className="space-y-6">
                 {/* Hero Section */}
-                <div className="space-y-4 p-4 border rounded-lg">
+                <form className="space-y-4 p-4 border rounded-lg">
                     <h3 className="font-semibold">Hero Section</h3>
                     <div className="space-y-2">
                         <Label htmlFor="heroTitle">Hero Title</Label>
@@ -599,8 +597,8 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                         <Label htmlFor="heroDescription">Hero Description</Label>
                         <Textarea id="heroDescription" defaultValue={hero.description} />
                     </div>
-                    <Button size="sm">Save Hero Content</Button>
-                </div>
+                    <Button size="sm" type="submit">Save Hero Content</Button>
+                </form>
 
                 {/* Banners Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
@@ -617,10 +615,6 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                                 <DialogTitle>Add New Banner</DialogTitle>
                                 </DialogHeader>
                                 <BannerForm />
-                                 <DialogFooter>
-                                    <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
-                                    <Button type="submit">Save Changes</Button>
-                                </DialogFooter>
                             </DialogContent>
                         </Dialog>
                     </div>
@@ -664,10 +658,6 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                             <DialogTitle>Edit Banner</DialogTitle>
                         </DialogHeader>
                         <BannerForm banner={selectedBanner} />
-                         <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
-                            <Button type="submit">Save Changes</Button>
-                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </CardContent>
@@ -677,7 +667,7 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
 
 function BannerForm({ banner }: { banner?: any }) {
     return (
-         <div className="space-y-4 py-4">
+         <form className="space-y-4 py-4">
             <div className="space-y-2">
                 <Label htmlFor="bannerTitle">Banner Title</Label>
                 <Input id="bannerTitle" placeholder="e.g., Unlock Your Potential" defaultValue={banner?.title}/>
@@ -687,7 +677,11 @@ function BannerForm({ banner }: { banner?: any }) {
                 <Input id="bannerImage" type="file" />
                 {banner?.image && <img src={banner.image} alt="Current banner" className="mt-2 h-20 w-auto rounded-md" />}
             </div>
-        </div>
+             <DialogFooter>
+                <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
+                <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+        </form>
     )
 }
 
