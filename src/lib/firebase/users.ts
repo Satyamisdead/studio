@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, onSnapshot, doc, updateDoc, deleteDoc, query } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 // This is a simplified user structure for the admin panel.
 // Note: This does not handle Firebase Auth users, only user data in Firestore.
@@ -53,20 +53,17 @@ export const deleteUser = async (userId: string): Promise<void> => {
     }
 }
 
-// getUsers now uses onSnapshot for real-time updates
-export const getUsers = (callback: (users: AppUser[]) => void): () => void => {
-    const q = query(collection(db, "users"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+// getUsers now fetches the data once. For real-time, we'd use onSnapshot.
+export const getUsers = async (): Promise<AppUser[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, "users"));
         const users: AppUser[] = [];
         querySnapshot.forEach((doc) => {
             users.push({ id: doc.id, ...doc.data() } as AppUser);
         });
-        callback(users);
-    }, (error) => {
-        console.error("Error getting users in real-time: ", error);
-        // In a real app, you might want to show a toast or error message to the user
-    });
-
-    return unsubscribe; // Return the unsubscribe function to clean up the listener
+        return users;
+    } catch(e: any) {
+        console.error("Error fetching users:", e);
+        throw new Error("Failed to fetch users: " + e.message);
+    }
 };
