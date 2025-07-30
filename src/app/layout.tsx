@@ -6,7 +6,6 @@ import AppSidebar from '@/components/AppSidebar';
 import BottomNav from '@/components/BottomNav';
 import { AuthProvider } from '@/hooks/use-auth';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
-import { usePathname } from 'next/navigation';
 
 // Separate metadata export for Server Components
 export const metadata: Metadata = {
@@ -20,6 +19,7 @@ function ClientLayout({
     children: React.ReactNode;
   }) {
     "use client";
+    const { usePathname } = require('next/navigation');
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
     const currentYear = new Date().getFullYear();
