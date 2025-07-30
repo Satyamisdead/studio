@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   ChartContainer,
   ChartTooltip,
@@ -153,7 +154,7 @@ export default function AdminDashboardPage() {
         </CardContent>
       </Card>
       
-      {/* Management Sections in Tabs */}
+      {/* Management Sections */}
       <div className="space-y-6">
         <ManagementSection title="Users Management" data={mockData.users} type="user" />
         <ManagementSection title="Course Management" data={mockData.courses} type="course" />
@@ -189,6 +190,15 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
         }
     }
 
+    const renderForm = () => {
+        switch(type) {
+            case 'user': return <UserForm />;
+            case 'course': return <CourseForm />;
+            case 'job': return <JobForm />;
+            case 'business': return <BusinessForm />;
+        }
+    }
+
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -210,8 +220,7 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                         </DialogDescription>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
-                           {type === 'user' && <UserForm />}
-                           {/* TODO: Add forms for other types */}
+                           {renderForm()}
                         </div>
                         <DialogFooter>
                             <DialogClose asChild>
@@ -249,20 +258,96 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
 function UserForm() {
     return (
         <>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Name</Label>
-                <Input id="name" placeholder="John Doe" className="col-span-3" />
+            <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" placeholder="John Doe" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">Email</Label>
-                <Input id="email" type="email" placeholder="john@example.com" className="col-span-3" />
+            <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" placeholder="john@example.com" />
             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" className="col-span-3" />
+             <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" />
             </div>
         </>
     );
+}
+
+function CourseForm() {
+    return (
+        <>
+            <div className="space-y-2">
+                <Label htmlFor="courseName">Course Name</Label>
+                <Input id="courseName" placeholder="e.g., Learn AI" />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="courseDescription">Description</Label>
+                <Textarea id="courseDescription" placeholder="A comprehensive course about..." />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="videoUrl">Video URL</Label>
+                <Input id="videoUrl" placeholder="https://example.com/video.mp4" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="bannerImage">Banner Image</Label>
+                <Input id="bannerImage" type="file" />
+            </div>
+            <div className="space-y-2">
+                <Label>Lessons</Label>
+                <div className="flex items-center gap-2">
+                   <Input placeholder="Lesson 1 Title" className="flex-grow"/>
+                   <Button variant="outline" size="icon"><PlusCircle className="h-4 w-4"/></Button>
+                </div>
+            </div>
+        </>
+    );
+}
+
+function JobForm() {
+    return (
+         <>
+            <div className="space-y-2">
+                <Label htmlFor="jobTitle">Job Title</Label>
+                <Input id="jobTitle" placeholder="e.g., Frontend Developer" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input id="companyName" placeholder="e.g., Tech Corp" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="jobDescription">Description</Label>
+                <Textarea id="jobDescription" placeholder="Job responsibilities include..." />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="payment">Payment/Salary</Label>
+                <Input id="payment" placeholder="e.g., $80,000/year" />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="xp">XP Reward</Label>
+                <Input id="xp" type="number" placeholder="e.g., 150" />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="companyLogo">Company Logo</Label>
+                <Input id="companyLogo" type="file" />
+            </div>
+        </>
+    )
+}
+
+function BusinessForm() {
+    return (
+        <>
+            <div className="space-y-2">
+                <Label htmlFor="solutionName">Solution Name</Label>
+                <Input id="solutionName" placeholder="e.g., Business Solution A" />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="solutionDescription">Description</Label>
+                <Textarea id="solutionDescription" placeholder="Describe the business solution..." />
+            </div>
+        </>
+    )
 }
 
 
@@ -276,14 +361,16 @@ function StripeManagementSection() {
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="pk">Public Key</Label>
-                    <Input id="pk" defaultValue="pk_live_********************" />
+                    <Input id="pk" placeholder="pk_live_********************" />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="sk">Private Key</Label>
-                    <Input id="sk" type="password" defaultValue="sk_live_********************" />
+                    <Input id="sk" type="password" placeholder="sk_live_********************" />
                 </div>
                 <Button>Update Keys</Button>
             </CardContent>
         </Card>
     );
 }
+
+    
