@@ -53,7 +53,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
     }
 }
 
-// getUsers now fetches the data once. For real-time, we'd use onSnapshot.
+// getUsers now fetches the data once and returns a promise.
 export const getUsers = async (): Promise<AppUser[]> => {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
