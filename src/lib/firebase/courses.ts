@@ -6,6 +6,7 @@ import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, g
 export interface Lesson {
   title: string;
   duration: string;
+  videoUrl: string; // Added video URL
 }
 
 // Main course structure

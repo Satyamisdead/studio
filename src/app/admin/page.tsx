@@ -351,11 +351,11 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const mutation = useMutation({
-        mutationFn: (userData: Omit<AppUser, 'id' | 'role'>) => currentUser ? updateUser(currentUser.id, userData) : addUser(userData),
+    const addMutation = useMutation({
+        mutationFn: addUser,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users']});
-            toast({ title: 'Success', description: `User ${currentUser ? 'updated' : 'added'} successfully.` });
+            toast({ title: 'Success', description: 'User added successfully.' });
             setOpen(false);
         },
         onError: (error) => {
@@ -363,7 +363,19 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
         }
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const updateMutation = useMutation({
+        mutationFn: (userData: AppUser) => updateUser(userData.id, userData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users']});
+            toast({ title: 'Success', description: 'User updated successfully.' });
+            setOpen(false);
+        },
+        onError: (error) => {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name || !email) {
             toast({ title: 'Error', description: 'Name and email are required.', variant: 'destructive' });
@@ -374,12 +386,14 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
             return;
         }
 
-        const userData: Omit<AppUser, 'id' | 'role'> & { password?: string } = { name, email };
-        if (password) {
-            userData.password = password;
+        if (currentUser) {
+            updateMutation.mutate({ ...currentUser, name, email });
+        } else {
+            addMutation.mutate({ name, email, password });
         }
-        mutation.mutate(userData);
     };
+    
+    const isPending = addMutation.isPending || updateMutation.isPending;
     
     return (
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
@@ -399,7 +413,7 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
                 <DialogClose asChild>
                     <Button type="button" variant="secondary">Close</Button>
                 </DialogClose>
-                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Button>
+                <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
         </form>
     );
@@ -410,12 +424,12 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
     const [description, setDescription] = React.useState(currentCourse?.description || '');
     const [longDescription, setLongDescription] = React.useState(currentCourse?.longDescription || '');
     const [xp, setXp] = React.useState(currentCourse?.xp || 0);
-    const [lessons, setLessons] = React.useState<Omit<Lesson,'id'>[]>(currentCourse?.lessons || [{ title: '', duration: '' }]);
+    const [lessons, setLessons] = React.useState<Omit<Lesson, 'id'>[]>(currentCourse?.lessons || [{ title: '', duration: '', videoUrl: '' }]);
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
     const mutation = useMutation({
-        mutationFn: (courseData: Omit<Course, 'id' | 'slug' | 'image' | 'hint'>) => currentCourse ? updateCourse(currentCourse.id, courseData) : addCourse(courseData),
+        mutationFn: (courseData: any) => currentCourse ? updateCourse(currentCourse.id, courseData) : addCourse(courseData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses']});
             toast({ title: 'Success', description: `Course ${currentCourse ? 'updated' : 'added'} successfully.` });
@@ -426,18 +440,18 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
         }
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const courseData = { title, description, longDescription, xp: Number(xp), providesCertificate: true, lessons };
         mutation.mutate(courseData);
     };
 
-    const handleLessonChange = (index: number, field: 'title' | 'duration', value: string) => {
+    const handleLessonChange = (index: number, field: 'title' | 'duration' | 'videoUrl', value: string) => {
         const newLessons = [...lessons];
         newLessons[index][field] = value;
         setLessons(newLessons);
     }
-    const addLesson = () => setLessons([...lessons, { title: '', duration: '' }]);
+    const addLesson = () => setLessons([...lessons, { title: '', duration: '', videoUrl: '' }]);
     const removeLesson = (index: number) => {
         if (lessons.length > 1) {
             setLessons(lessons.filter((_, i) => i !== index));
@@ -469,6 +483,7 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
                        <div className="flex-grow space-y-2">
                            <Input placeholder={`Lesson ${index + 1} Title`} value={lesson.title} onChange={(e) => handleLessonChange(index, 'title', e.target.value)} />
                            <Input placeholder={`Duration (e.g., 15m)`} value={lesson.duration} onChange={(e) => handleLessonChange(index, 'duration', e.target.value)} />
+                           <Input placeholder={`Video URL`} value={lesson.videoUrl} onChange={(e) => handleLessonChange(index, 'videoUrl', e.target.value)} />
                        </div>
                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLesson(index)} disabled={lessons.length === 1}><Trash2 className="h-4 w-4"/></Button>
                     </div>
