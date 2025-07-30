@@ -51,6 +51,10 @@ import {
 } from "@/components/ui/chart"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Users, BookOpen, Briefcase, Building, PlusCircle, Pencil, Trash2, Home } from "lucide-react"
+import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getUsers, addUser, updateUser, deleteUser, AppUser } from '@/lib/firebase/users';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const chartData = [
   { month: "January", users: 186 },
@@ -69,10 +73,6 @@ const chartConfig = {
 }
 
 const mockData = {
-    users: [
-        { id: 'usr_1', name: 'Satyam', email: 'satyam@example.com', role: 'Admin' },
-        { id: 'usr_2', name: 'Jane Doe', email: 'jane@example.com', role: 'User' },
-    ],
     courses: [
         { id: 'crs_1', name: 'Learn AI', category: 'Technology', students: 1500 },
         { id: 'crs_2', name: 'Learn App Development', category: 'Development', students: 1200 },
@@ -92,7 +92,19 @@ const mockData = {
     }
 }
 
+const queryClient = new QueryClient();
+
 export default function AdminDashboardPage() {
+    return (
+        <QueryClientProvider client={queryClient}>
+            <AdminDashboardContent />
+        </QueryClientProvider>
+    )
+}
+
+function AdminDashboardContent() {
+  const { data: users, isLoading: usersLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers });
+  
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-8">
       <div className="space-y-2">
@@ -110,7 +122,7 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">10,234</div>
+            {usersLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users?.length ?? 0}</div>}
             <p className="text-xs text-muted-foreground">+5.2% from last month</p>
           </CardContent>
         </Card>
@@ -120,7 +132,7 @@ export default function AdminDashboardPage() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">52</div>
+            <div className="text-2xl font-bold">{mockData.courses.length}</div>
             <p className="text-xs text-muted-foreground">+2 since last month</p>
           </CardContent>
         </Card>
@@ -130,7 +142,7 @@ export default function AdminDashboardPage() {
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15</div>
+            <div className="text-2xl font-bold">{mockData.jobs.length}</div>
             <p className="text-xs text-muted-foreground">+3 new jobs this week</p>
           </CardContent>
         </Card>
@@ -176,7 +188,7 @@ export default function AdminDashboardPage() {
       {/* Management Sections */}
       <div className="space-y-6">
         <HomePageManagementSection banners={mockData.banners} hero={mockData.hero} />
-        <ManagementSection title="Users Management" data={mockData.users} type="user" />
+        <ManagementSection title="Users Management" data={users} isLoading={usersLoading} type="user" />
         <ManagementSection title="Course Management" data={mockData.courses} type="course" />
         <ManagementSection title="Jobs Management" data={mockData.jobs} type="job" />
         <ManagementSection title="Business Management" data={mockData.business} type="business" />
@@ -189,11 +201,12 @@ export default function AdminDashboardPage() {
 
 interface ManagementSectionProps {
     title: string;
-    data: any[];
+    data: any[] | undefined;
     type: 'user' | 'course' | 'job' | 'business';
+    isLoading?: boolean;
 }
 
-function ManagementSection({ title, data, type }: ManagementSectionProps) {
+function ManagementSection({ title, data, type, isLoading }: ManagementSectionProps) {
     const headers = {
         user: ['Name', 'Email', 'Role', 'Actions'],
         course: ['Course Name', 'Category', 'Students', 'Actions'],
@@ -201,17 +214,22 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
         business: ['Solution Name', 'Status', 'Actions']
     }
     
-    const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
     const [selectedItem, setSelectedItem] = React.useState<any>(null);
 
     const handleEditClick = (item: any) => {
       setSelectedItem(item);
-      setIsEditDialogOpen(true);
+      setIsFormOpen(true);
+    }
+    
+    const handleAddNewClick = () => {
+        setSelectedItem(null);
+        setIsFormOpen(true);
     }
 
     const renderRow = (item: any) => {
         switch(type) {
-            case 'user': return <><TableCell>{item.name}</TableCell><TableCell>{item.email}</TableCell><TableCell><Badge>{item.role}</Badge></TableCell></>;
+            case 'user': return <><TableCell>{item.name}</TableCell><TableCell>{item.email}</TableCell><TableCell><Badge>{item.role || 'User'}</Badge></TableCell></>;
             case 'course': return <><TableCell>{item.name}</TableCell><TableCell>{item.category}</TableCell><TableCell>{item.students}</TableCell></>;
             case 'job': return <><TableCell>{item.title}</TableCell><TableCell>{item.company}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
             case 'business': return <><TableCell>{item.name}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
@@ -220,11 +238,29 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
 
     const renderForm = (item?: any) => {
         switch(type) {
-            case 'user': return <UserForm user={item} />;
+            case 'user': return <UserForm currentUser={item} setOpen={setIsFormOpen} />;
             case 'course': return <CourseForm course={item}/>;
             case 'job': return <JobForm job={item} />;
             case 'business': return <BusinessForm business={item} />;
         }
+    }
+    
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => deleteUser(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: 'Success', description: 'User deleted successfully.' });
+        },
+        onError: (error) => {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const handleDelete = (id: string) => {
+        deleteMutation.mutate(id);
     }
     
     const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
@@ -236,30 +272,9 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                     <CardTitle>{title}</CardTitle>
                     <CardDescription>View, add, edit, or delete entries.</CardDescription>
                 </div>
-                 <Dialog>
-                    <DialogTrigger asChild>
-                        <Button size="sm">
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add New
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                        <DialogTitle>Add New {typeTitle}</DialogTitle>
-                        <DialogDescription>
-                            Fill in the details below to add a new entry.
-                        </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                           {renderForm()}
-                        </div>
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">Close</Button>
-                            </DialogClose>
-                            <Button type="submit">Save Changes</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <Button size="sm" onClick={handleAddNewClick}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                </Button>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -269,14 +284,20 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.map(item => (
+                        {isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <TableRow key={`skel-${i}`}>
+                                    {headers[type].map((h) => <TableCell key={h}><Skeleton className="h-5 w-full" /></TableCell>)}
+                                </TableRow>
+                            ))
+                        ) : data?.map(item => (
                             <TableRow key={item.id}>
                                 {renderRow(item)}
                                 <TableCell className="space-x-2">
-                                    <Button variant="outline" size="icon" onClick={() => handleEditClick(item)}><Pencil className="h-4 w-4" /></Button>
+                                    <Button variant="outline" size="icon" onClick={() => handleEditClick(item)} disabled={type !== 'user'}><Pencil className="h-4 w-4" /></Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="destructive" size="icon" disabled={type !== 'user'}><Trash2 className="h-4 w-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -287,7 +308,7 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
@@ -297,45 +318,81 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                     </TableBody>
                 </Table>
             </CardContent>
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                  <DialogTitle>Edit {typeTitle}</DialogTitle>
+                  <DialogTitle>{selectedItem ? 'Edit' : 'Add New'} {typeTitle}</DialogTitle>
                   <DialogDescription>
-                      Update the details for this entry.
+                      {selectedItem ? 'Update the details for this entry.' : 'Fill in the details below to add a new entry.'}
                   </DialogDescription>
                   </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                     {renderForm(selectedItem)}
-                  </div>
-                  <DialogFooter>
-                      <DialogClose asChild>
-                          <Button type="button" variant="secondary">Close</Button>
-                      </DialogClose>
-                      <Button type="submit">Save Changes</Button>
-                  </DialogFooter>
+                  {renderForm(selectedItem)}
               </DialogContent>
           </Dialog>
         </Card>
     );
 }
 
-function UserForm({ user }: { user?: any }) {
+function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (open: boolean) => void }) {
+    const [name, setName] = React.useState(currentUser?.name || '');
+    const [email, setEmail] = React.useState(currentUser?.email || '');
+    const [password, setPassword] = React.useState('');
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    const mutation = useMutation({
+        mutationFn: (userData: Omit<AppUser, 'id' | 'role'>) => currentUser ? updateUser(currentUser.id, userData) : addUser(userData),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users']});
+            toast({ title: 'Success', description: `User ${currentUser ? 'updated' : 'added'} successfully.` });
+            setOpen(false);
+        },
+        onError: (error) => {
+            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name || !email) {
+            toast({ title: 'Error', description: 'Name and email are required.', variant: 'destructive' });
+            return;
+        }
+        if (!currentUser && !password) {
+            toast({ title: 'Error', description: 'Password is required for new users.', variant: 'destructive' });
+            return;
+        }
+
+        const userData: Omit<AppUser, 'id' | 'role'> & { password?: string } = { name, email };
+        if (password) {
+            userData.password = password;
+        }
+        mutation.mutate(userData);
+    };
+    
     return (
-        <>
-            <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="John Doe" defaultValue={user?.name} />
+        <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} />
+                </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="john@example.com" defaultValue={user?.email}/>
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="Leave blank to keep unchanged" />
-            </div>
-        </>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Button>
+            </DialogFooter>
+        </form>
     );
 }
 
@@ -350,7 +407,7 @@ function CourseForm({ course }: { course?: any }) {
     };
     
     return (
-        <>
+        <div className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="courseName">Course Name</Label>
                 <Input id="courseName" placeholder="e.g., Learn AI" defaultValue={course?.name}/>
@@ -378,13 +435,19 @@ function CourseForm({ course }: { course?: any }) {
                
                 <Button type="button" variant="outline" size="sm" onClick={addLesson}><PlusCircle className="mr-2 h-4 w-4"/>Add Lesson</Button>
             </div>
-        </>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+        </div>
     );
 }
 
 function JobForm({ job }: { job?: any }) {
     return (
-         <>
+        <div className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="jobTitle">Job Title</Label>
                 <Input id="jobTitle" placeholder="e.g., Frontend Developer" defaultValue={job?.title} />
@@ -409,13 +472,19 @@ function JobForm({ job }: { job?: any }) {
                 <Label htmlFor="companyLogo">Company Logo</Label>
                 <Input id="companyLogo" type="file" />
             </div>
-        </>
+             <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+        </div>
     )
 }
 
 function BusinessForm({ business }: { business?: any}) {
     return (
-        <>
+        <div className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="solutionName">Solution Name</Label>
                 <Input id="solutionName" placeholder="e.g., Business Solution A" defaultValue={business?.name} />
@@ -424,7 +493,13 @@ function BusinessForm({ business }: { business?: any}) {
                 <Label htmlFor="solutionDescription">Description</Label>
                 <Textarea id="solutionDescription" placeholder="Describe the business solution..." defaultValue={business?.description}/>
             </div>
-        </>
+            <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary">Close</Button>
+                </DialogClose>
+                <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+        </div>
     )
 }
 

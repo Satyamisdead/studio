@@ -7,6 +7,7 @@ import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, type UserCredential, deleteUser } from 'firebase/auth';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from './use-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Define the data shapes here for clarity
 export interface SignUpData {
@@ -31,6 +32,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const queryClient = new QueryClient();
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -121,7 +123,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? <div className="min-h-screen flex items-center justify-center"><LoadingSpinner text="Authenticating..." /></div> : children}
+        <QueryClientProvider client={queryClient}>
+            {loading ? <div className="min-h-screen flex items-center justify-center"><LoadingSpinner text="Authenticating..." /></div> : children}
+        </QueryClientProvider>
     </AuthContext.Provider>
   );
 };
