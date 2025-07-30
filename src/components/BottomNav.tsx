@@ -10,6 +10,10 @@ import { useAuth } from '@/hooks/use-auth';
 export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
+  
+  if (pathname.startsWith('/admin')) {
+      return null;
+  }
 
   const accountHref = user ? '/profile' : '/sign-in';
 

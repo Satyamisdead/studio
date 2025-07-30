@@ -20,6 +20,11 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
+  // Do not show sidebar on admin page
+  if (pathname.startsWith('/admin')) {
+      return null;
+  }
+
   const authNavigation = user 
     ? [{ name: 'Profile', href: '/profile', icon: User }]
     : [

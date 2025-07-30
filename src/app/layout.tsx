@@ -6,6 +6,7 @@ import AppSidebar from '@/components/AppSidebar';
 import BottomNav from '@/components/BottomNav';
 import { AuthProvider } from '@/hooks/use-auth';
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
+import { usePathname } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Azoums Platform',
@@ -32,24 +33,48 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <div className="flex min-h-screen bg-background text-foreground">
-            <aside className="w-64 flex-shrink-0 border-r border-border/40 bg-card hidden md:flex flex-col">
-              <AppSidebar />
-            </aside>
-            <div className="flex flex-1 flex-col">
-              <main className="flex-grow pb-16 md:pb-0">
-                {children}
-              </main>
-              <footer className="text-center py-4 text-sm text-muted-foreground border-t hidden md:block">
-                Azoums Platform &copy; {currentYear}
-              </footer>
-            </div>
-          </div>
-          <BottomNav />
-          <Toaster />
-          <PwaInstallPrompt />
+            <LayoutContent>{children}</LayoutContent>
         </AuthProvider>
       </body>
     </html>
   );
+}
+
+
+// We extract the main layout content into a separate component
+// to use the usePathname hook, which is only available in client components.
+function LayoutContent({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const isAdminPage = pathname.startsWith('/admin');
+    const currentYear = new Date().getFullYear();
+
+    if (isAdminPage) {
+      return (
+        <>
+            {children}
+            <Toaster />
+        </>
+      );
+    }
+  
+    return (
+       <>
+        <div className="flex min-h-screen bg-background text-foreground">
+            <aside className="w-64 flex-shrink-0 border-r border-border/40 bg-card hidden md:flex flex-col">
+            <AppSidebar />
+            </aside>
+            <div className="flex flex-1 flex-col">
+            <main className="flex-grow pb-16 md:pb-0">
+                {children}
+            </main>
+            <footer className="text-center py-4 text-sm text-muted-foreground border-t hidden md:block">
+                Azoums Platform &copy; {currentYear}
+            </footer>
+            </div>
+        </div>
+        <BottomNav />
+        <Toaster />
+        <PwaInstallPrompt />
+      </>
+    );
 }
