@@ -238,8 +238,8 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
         switch(type) {
             case 'user': return <UserForm currentUser={item} setOpen={setIsFormOpen} />;
             case 'course': return <CourseForm currentCourse={item} setOpen={setIsFormOpen} />;
-            case 'job': return <JobForm job={item} />;
-            case 'business': return <BusinessForm business={item} />;
+            case 'job': return <JobForm job={item} setOpen={setIsFormOpen} />;
+            case 'business': return <BusinessForm business={item} setOpen={setIsFormOpen} />;
         }
     }
     
@@ -250,11 +250,23 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
         switch(type) {
             case 'user': return useMutation({
                 mutationFn: (id: string) => deleteUser(id),
-                onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+                onSuccess: () => {
+                    toast({ title: 'Success', description: 'User deleted successfully.' });
+                    queryClient.invalidateQueries({ queryKey: ['users'] });
+                },
+                onError: (error: Error) => {
+                    toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                }
             });
             case 'course': return useMutation({
                 mutationFn: (id: string) => deleteCourse(id),
-                onSuccess: () => queryClient.invalidateQueries({ queryKey: ['courses'] }),
+                onSuccess: () => {
+                    toast({ title: 'Success', description: 'Course deleted successfully.' });
+                    queryClient.invalidateQueries({ queryKey: ['courses'] });
+                },
+                onError: (error: Error) => {
+                    toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                }
             });
             default: return null;
         }
@@ -264,14 +276,7 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
 
     const handleDelete = (id: string) => {
         if (!deleteMutation) return;
-        deleteMutation.mutate(id, {
-            onSuccess: () => {
-                 toast({ title: 'Success', description: `${typeTitle} deleted successfully.` });
-            },
-            onError: (error) => {
-                toast({ title: 'Error', description: error.message, variant: 'destructive' });
-            }
-        });
+        deleteMutation.mutate(id);
     }
     
     const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
@@ -308,7 +313,7 @@ function ManagementSection({ title, data, type, isLoading }: ManagementSectionPr
                                     <Button variant="outline" size="icon" onClick={() => handleEditClick(item)} disabled={type === 'job' || type === 'business'}><Pencil className="h-4 w-4" /></Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon" disabled={type === 'job' || type === 'business'}><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="destructive" size="icon" disabled={!deleteMutation || (type === 'job' || type === 'business')}><Trash2 className="h-4 w-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -351,27 +356,27 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const addMutation = useMutation({
+    const { mutate: addUserMutation, isPending: isAdding } = useMutation({
         mutationFn: addUser,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users']});
             toast({ title: 'Success', description: 'User added successfully.' });
             setOpen(false);
         },
-        onError: (error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        onError: (error: Error) => {
+            toast({ title: 'Error adding user', description: error.message, variant: 'destructive' });
         }
     });
 
-    const updateMutation = useMutation({
-        mutationFn: (userData: AppUser) => updateUser(userData.id, userData),
+    const { mutate: updateUserMutation, isPending: isUpdating } = useMutation({
+        mutationFn: (userData: Omit<AppUser, 'role'>) => updateUser(userData.id, userData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users']});
             toast({ title: 'Success', description: 'User updated successfully.' });
             setOpen(false);
         },
-        onError: (error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
+        onError: (error: Error) => {
+            toast({ title: 'Error updating user', description: error.message, variant: 'destructive' });
         }
     });
 
@@ -381,37 +386,37 @@ function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (o
             toast({ title: 'Error', description: 'Name and email are required.', variant: 'destructive' });
             return;
         }
-        if (!currentUser && !password) {
-            toast({ title: 'Error', description: 'Password is required for new users.', variant: 'destructive' });
-            return;
-        }
-
+        
         if (currentUser) {
-            updateMutation.mutate({ ...currentUser, name, email });
+            updateUserMutation({ id: currentUser.id, name, email });
         } else {
-            addMutation.mutate({ name, email, password });
+             if (!password) {
+                toast({ title: 'Error', description: 'Password is required for new users.', variant: 'destructive' });
+                return;
+            }
+            addUserMutation({ name, email, password });
         }
     };
     
-    const isPending = addMutation.isPending || updateMutation.isPending;
+    const isPending = isAdding || isUpdating;
     
     return (
         <form onSubmit={handleSubmit} className="grid gap-4 py-4">
             <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} disabled={isPending} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isPending} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} disabled={isPending || !!currentUser} />
             </div>
             <DialogFooter>
                 <DialogClose asChild>
-                    <Button type="button" variant="secondary">Close</Button>
+                    <Button type="button" variant="secondary" disabled={isPending}>Close</Button>
                 </DialogClose>
                 <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
@@ -428,14 +433,14 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const mutation = useMutation({
+    const { mutate: courseMutation, isPending } = useMutation({
         mutationFn: (courseData: any) => currentCourse ? updateCourse(currentCourse.id, courseData) : addCourse(courseData),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['courses']});
             toast({ title: 'Success', description: `Course ${currentCourse ? 'updated' : 'added'} successfully.` });
             setOpen(false);
         },
-        onError: (error) => {
+        onError: (error: Error) => {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         }
     });
@@ -443,10 +448,10 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const courseData = { title, description, longDescription, xp: Number(xp), providesCertificate: true, lessons };
-        mutation.mutate(courseData);
+        courseMutation(courseData);
     };
 
-    const handleLessonChange = (index: number, field: 'title' | 'duration' | 'videoUrl', value: string) => {
+    const handleLessonChange = (index: number, field: keyof Lesson, value: string) => {
         const newLessons = [...lessons];
         newLessons[index][field] = value;
         setLessons(newLessons);
@@ -462,47 +467,48 @@ function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpe
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="courseName">Course Title</Label>
-                <Input id="courseName" placeholder="e.g., Learn AI" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input id="courseName" placeholder="e.g., Learn AI" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isPending} />
             </div>
              <div className="space-y-2">
                 <Label htmlFor="courseDescription">Short Description</Label>
-                <Textarea id="courseDescription" placeholder="A short, catchy description for the course card." value={description} onChange={(e) => setDescription(e.target.value)} />
+                <Textarea id="courseDescription" placeholder="A short, catchy description for the course card." value={description} onChange={(e) => setDescription(e.target.value)} disabled={isPending} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="courseLongDescription">Full Description</Label>
-                <Textarea id="courseLongDescription" placeholder="A detailed description for the course page." value={longDescription} onChange={(e) => setLongDescription(e.target.value)} rows={5} />
+                <Textarea id="courseLongDescription" placeholder="A detailed description for the course page." value={longDescription} onChange={(e) => setLongDescription(e.target.value)} rows={5} disabled={isPending} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="xp">XP Reward</Label>
-                <Input id="xp" type="number" placeholder="e.g., 150" value={xp} onChange={(e) => setXp(Number(e.target.value))} />
+                <Input id="xp" type="number" placeholder="e.g., 150" value={xp} onChange={(e) => setXp(Number(e.target.value))} disabled={isPending} />
             </div>
             <div className="space-y-2">
                 <Label>Lessons</Label>
                 {lessons.map((lesson, index) => (
-                     <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
+                     <div key={index} className="flex items-end gap-2 p-2 border rounded-md">
                        <div className="flex-grow space-y-2">
-                           <Input placeholder={`Lesson ${index + 1} Title`} value={lesson.title} onChange={(e) => handleLessonChange(index, 'title', e.target.value)} />
-                           <Input placeholder={`Duration (e.g., 15m)`} value={lesson.duration} onChange={(e) => handleLessonChange(index, 'duration', e.target.value)} />
-                           <Input placeholder={`Video URL`} value={lesson.videoUrl} onChange={(e) => handleLessonChange(index, 'videoUrl', e.target.value)} />
+                           <Label className="text-xs text-muted-foreground">Lesson {index + 1}</Label>
+                           <Input placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(index, 'title', e.target.value)} disabled={isPending} />
+                           <Input placeholder="Duration (e.g., 15m)" value={lesson.duration} onChange={(e) => handleLessonChange(index, 'duration', e.target.value)} disabled={isPending} />
+                           <Input placeholder="Video URL" value={lesson.videoUrl} onChange={(e) => handleLessonChange(index, 'videoUrl', e.target.value)} disabled={isPending} />
                        </div>
-                       <Button type="button" variant="destructive" size="icon" onClick={() => removeLesson(index)} disabled={lessons.length === 1}><Trash2 className="h-4 w-4"/></Button>
+                       <Button type="button" variant="destructive" size="icon" onClick={() => removeLesson(index)} disabled={lessons.length === 1 || isPending}><Trash2 className="h-4 w-4"/></Button>
                     </div>
                 ))}
                
-                <Button type="button" variant="outline" size="sm" onClick={addLesson}><PlusCircle className="mr-2 h-4 w-4"/>Add Lesson</Button>
+                <Button type="button" variant="outline" size="sm" onClick={addLesson} disabled={isPending}><PlusCircle className="mr-2 h-4 w-4"/>Add Lesson</Button>
             </div>
             <DialogFooter>
                 <DialogClose asChild>
-                    <Button type="button" variant="secondary">Close</Button>
+                    <Button type="button" variant="secondary" disabled={isPending}>Close</Button>
                 </DialogClose>
-                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Button>
+                <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
         </form>
     );
 }
 
 
-function JobForm({ job }: { job?: any }) {
+function JobForm({ job, setOpen }: { job?: any, setOpen: (open: boolean) => void }) {
     return (
         <form className="space-y-4">
             <div className="space-y-2">
@@ -539,7 +545,7 @@ function JobForm({ job }: { job?: any }) {
     )
 }
 
-function BusinessForm({ business }: { business?: any}) {
+function BusinessForm({ business, setOpen }: { business?: any, setOpen: (open: boolean) => void}) {
     return (
         <form className="space-y-4">
             <div className="space-y-2">
@@ -584,14 +590,19 @@ function StripeManagementSection() {
 }
 
 function HomePageManagementSection({ banners, hero }: { banners: any[], hero: any }) {
-    const [isBannerEditDialogOpen, setIsBannerEditDialogOpen] = React.useState(false);
+    const [isBannerFormOpen, setIsBannerFormOpen] = React.useState(false);
     const [selectedBanner, setSelectedBanner] = React.useState<any>(null);
 
     const handleEditClick = (banner: any) => {
         setSelectedBanner(banner);
-        setIsBannerEditDialogOpen(true);
+        setIsBannerFormOpen(true);
     };
 
+    const handleAddNewClick = () => {
+        setSelectedBanner(null);
+        setIsBannerFormOpen(true);
+    }
+    
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -619,19 +630,9 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                 <div className="space-y-4 p-4 border rounded-lg">
                     <div className="flex justify-between items-center">
                         <h3 className="font-semibold">Banners</h3>
-                         <Dialog>
-                            <DialogTrigger asChild>
-                                <Button size="sm">
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Banner
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                <DialogTitle>Add New Banner</DialogTitle>
-                                </DialogHeader>
-                                <BannerForm />
-                            </DialogContent>
-                        </Dialog>
+                         <Button size="sm" onClick={handleAddNewClick}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Banner
+                        </Button>
                     </div>
                     <Table>
                         <TableHeader>
@@ -667,12 +668,12 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                         </TableBody>
                     </Table>
                 </div>
-                 <Dialog open={isBannerEditDialogOpen} onOpenChange={setIsBannerEditDialogOpen}>
+                 <Dialog open={isBannerFormOpen} onOpenChange={setIsBannerFormOpen}>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Edit Banner</DialogTitle>
+                            <DialogTitle>{selectedBanner ? 'Edit' : 'Add New'} Banner</DialogTitle>
                         </DialogHeader>
-                        <BannerForm banner={selectedBanner} />
+                        <BannerForm banner={selectedBanner} setOpen={setIsBannerFormOpen} />
                     </DialogContent>
                 </Dialog>
             </CardContent>
@@ -680,7 +681,7 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
     )
 }
 
-function BannerForm({ banner }: { banner?: any }) {
+function BannerForm({ banner, setOpen }: { banner?: any, setOpen: (open: boolean) => void }) {
     return (
          <form className="space-y-4 py-4">
             <div className="space-y-2">
@@ -693,11 +694,10 @@ function BannerForm({ banner }: { banner?: any }) {
                 {banner?.image && <img src={banner.image} alt="Current banner" className="mt-2 h-20 w-auto rounded-md" />}
             </div>
              <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose>
+                <DialogClose asChild><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Close</Button></DialogClose>
                 <Button type="submit">Save Changes</Button>
             </DialogFooter>
         </form>
     )
 }
 
-    
