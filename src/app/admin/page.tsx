@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -18,6 +19,18 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   ChartContainer,
   ChartTooltip,
@@ -183,9 +196,31 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
                     <CardTitle>{title}</CardTitle>
                     <CardDescription>View, add, edit, or delete entries.</CardDescription>
                 </div>
-                <Button size="sm">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New
-                </Button>
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button size="sm">
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                        <DialogTitle>Add New {type.charAt(0).toUpperCase() + type.slice(1)}</DialogTitle>
+                        <DialogDescription>
+                            Fill in the details below to add a new entry.
+                        </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                           {type === 'user' && <UserForm />}
+                           {/* TODO: Add forms for other types */}
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Close</Button>
+                            </DialogClose>
+                            <Button type="submit">Save changes</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -211,6 +246,26 @@ function ManagementSection({ title, data, type }: ManagementSectionProps) {
     );
 }
 
+function UserForm() {
+    return (
+        <>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">Name</Label>
+                <Input id="name" placeholder="John Doe" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">Email</Label>
+                <Input id="email" type="email" placeholder="john@example.com" className="col-span-3" />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">Password</Label>
+                <Input id="password" type="password" placeholder="••••••••" className="col-span-3" />
+            </div>
+        </>
+    );
+}
+
+
 function StripeManagementSection() {
     return (
         <Card>
@@ -220,12 +275,12 @@ function StripeManagementSection() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Public Key</label>
-                    <p className="text-sm p-2 bg-muted rounded-md font-mono">pk_live_********************</p>
+                    <Label htmlFor="pk">Public Key</Label>
+                    <Input id="pk" defaultValue="pk_live_********************" />
                 </div>
                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Private Key</label>
-                    <p className="text-sm p-2 bg-muted rounded-md font-mono">sk_live_********************</p>
+                    <Label htmlFor="sk">Private Key</Label>
+                    <Input id="sk" type="password" defaultValue="sk_live_********************" />
                 </div>
                 <Button>Update Keys</Button>
             </CardContent>
