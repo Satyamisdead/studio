@@ -32,7 +32,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const queryClient = new QueryClient();
+export const queryClient = new QueryClient();
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider value={value}>
         <QueryClientProvider client={queryClient}>
-            {loading ? <LoadingSpinner text="Authenticating..." /> : children}
+          {loading ? <LoadingSpinner text="Authenticating..." /> : children}
         </QueryClientProvider>
     </AuthContext.Provider>
   );
@@ -136,22 +136,4 @@ export const useAuth = (): AuthContextType => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-export const ProtectRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    useEffect(() => {
-        if (!loading && !user && !['/sign-in', '/sign-up'].includes(pathname)) {
-            router.push('/sign-in');
-        }
-    }, [user, loading, router, pathname]);
-
-    if (loading || (!user && !['/sign-in', '/sign-up'].includes(pathname))) {
-        return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner text="Loading page..." /></div>;
-    }
-
-    return <>{children}</>;
 };
