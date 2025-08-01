@@ -26,7 +26,13 @@ const plans = [
   {
     name: "Pro",
     price: "€1",
-    priceId: "price_1PMb1bDKBFn1lugXwS9zT4eI", // This is a real test price ID for a €1/month plan.
+    // IMPORTANT: Replace this with your actual Stripe Price ID.
+    // 1. Go to your Stripe Dashboard: https://dashboard.stripe.com/
+    // 2. Go to the "Products" section.
+    // 3. Create a new Product (e.g., "Pro Plan Subscription").
+    // 4. Add a recurring price to it (e.g., €1/month).
+    // 5. Copy the Price ID (it looks like `price_...`) and paste it here.
+    priceId: "YOUR_STRIPE_PRICE_ID_HERE", 
     features: [
       "Full Access to All Courses",
       "Unlimited AI Studio Usage",
@@ -49,6 +55,16 @@ export default function UpgradePage() {
     if (!user) {
       router.push('/sign-in');
       return;
+    }
+
+    // Add a check to ensure the placeholder price ID has been replaced.
+    if (priceId === "YOUR_STRIPE_PRICE_ID_HERE") {
+        toast({
+            title: "Configuration Needed",
+            description: "Please replace the placeholder Stripe Price ID in the code before proceeding.",
+            variant: "destructive"
+        });
+        return;
     }
 
     setLoading(true);
