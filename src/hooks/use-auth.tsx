@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider value={value}>
         <QueryClientProvider client={queryClient}>
-          {loading ? <LoadingSpinner text="Authenticating..." /> : children}
+          {children}
         </QueryClientProvider>
     </AuthContext.Provider>
   );
