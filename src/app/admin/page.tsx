@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -61,7 +62,7 @@ function ManagementSection<T extends Item>({
   queryKey: string;
   queryFn: () => Promise<T[]>;
   addMutationFn: (item: any) => Promise<any>;
-  updateMutationFn: (item: any) => Promise<any>;
+  updateMutationFn: (item: T) => Promise<any>;
   deleteMutationFn: (id: string) => Promise<any>;
   columns: string[];
   renderRow: (item: T) => React.ReactNode;
@@ -89,7 +90,7 @@ function ManagementSection<T extends Item>({
     const mutationConfig = {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [queryKey] });
-            toast({ title: "Success", description: `${title} saved successfully.` });
+            toast({ title: "Success", description: `${title.slice(0, -1)} saved successfully.` });
             setFormOpen(false);
             setSelectedItem(undefined);
         },
@@ -104,7 +105,7 @@ function ManagementSection<T extends Item>({
     });
 
     const updateMutation = useMutation({
-        mutationFn: (item: T) => updateMutationFn({ id: item.id, ...item }),
+        mutationFn: updateMutationFn,
         ...mutationConfig,
     });
 
@@ -121,7 +122,7 @@ function ManagementSection<T extends Item>({
         },
     });
 
-    const handleSave = async (itemData: T) => {
+    const handleSave = async (itemData: any) => {
         if (selectedItem) {
             await updateMutation.mutateAsync({ ...selectedItem, ...itemData });
         } else {
@@ -266,7 +267,7 @@ const UserForm = ({ item, onSave, onClose, isLoading }: { item?: AppUser, onSave
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const dataToSave: NewUser = { name: formData.name, email: formData.email };
-        if (formData.password) {
+        if (formData.password && !item) { // Only add password on creation
             dataToSave.password = formData.password;
         }
         await onSave(dataToSave);
@@ -283,9 +284,9 @@ const UserForm = ({ item, onSave, onClose, isLoading }: { item?: AppUser, onSave
                     <Label htmlFor="email" className="text-right">Email</Label>
                     <Input id="email" type="email" value={formData.email} onChange={handleChange} className="col-span-3" />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
+                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="password" className="text-right">Password</Label>
-                    <Input id="password" type="password" placeholder={item ? 'Leave blank to keep unchanged' : ''} value={formData.password} onChange={handleChange} className="col-span-3" />
+                    <Input id="password" type="password" placeholder={item ? 'Leave blank to keep unchanged' : ''} value={formData.password} onChange={handleChange} className="col-span-3" disabled={!!item} />
                 </div>
             </div>
             <DialogFooter>
@@ -331,9 +332,10 @@ const CourseForm = ({ item, onSave, onClose, isLoading }: { item?: Course, onSav
         }
     }, [item]);
 
-    const handleLessonChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleLessonChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const newLessons = [...formData.lessons];
-        newLessons[index] = { ...newLessons[index], [e.target.id]: e.target.value };
+        const field = e.target.id.split('-')[0] as keyof Lesson; // e.g. 'title' from 'title-0'
+        (newLessons[index] as any)[field] = e.target.value;
         setFormData(prev => ({ ...prev, lessons: newLessons }));
     };
 
@@ -371,9 +373,9 @@ const CourseForm = ({ item, onSave, onClose, isLoading }: { item?: Course, onSav
                     {formData.lessons.map((lesson, index) => (
                         <div key={index} className="flex items-start gap-2 p-2 border rounded-md relative">
                             <div className="flex-grow space-y-2">
-                                <Input id="title" placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(index, e)} />
-                                <Input id="duration" placeholder="Duration (e.g., 15m)" value={lesson.duration} onChange={(e) => handleLessonChange(index, e)} />
-                                <Input id="videoUrl" placeholder="Video URL" value={lesson.videoUrl || ''} onChange={(e) => handleLessonChange(index, e)} />
+                                <Input id={`title-${index}`} placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(index, e)} />
+                                <Input id={`duration-${index}`} placeholder="Duration (e.g., 15m)" value={lesson.duration} onChange={(e) => handleLessonChange(index, e)} />
+                                <Input id={`videoUrl-${index}`} placeholder="Video URL" value={lesson.videoUrl || ''} onChange={(e) => handleLessonChange(index, e)} />
                             </div>
                             <Button type="button" variant="ghost" size="icon" onClick={() => removeLesson(index)} className="absolute top-1 right-1">
                                 <X className="h-4 w-4" />
@@ -401,6 +403,7 @@ const CourseForm = ({ item, onSave, onClose, isLoading }: { item?: Course, onSav
     );
 };
 
+
 // AdminDashboardPage is the main component for the admin page
 export default function AdminDashboardPage() {
     return (
@@ -415,7 +418,7 @@ export default function AdminDashboardPage() {
                         description="Manage all registered users."
                         queryKey="users"
                         queryFn={getUsers}
-                        addMutationFn={(user: NewUser) => addUser(user)}
+                        addMutationFn={(newUser: NewUser) => addUser(newUser)}
                         updateMutationFn={(user: AppUser) => updateUser(user.id, user)}
                         deleteMutationFn={(id: string) => deleteUser(id)}
                         columns={['Name', 'Email', 'Role']}
@@ -433,7 +436,7 @@ export default function AdminDashboardPage() {
                         description="Manage all courses."
                         queryKey="courses"
                         queryFn={getCourses}
-                        addMutationFn={(course: NewCourseData) => addCourse(course)}
+                        addMutationFn={(newCourse: NewCourseData) => addCourse(newCourse)}
                         updateMutationFn={(course: Course) => updateCourse(course.id, course)}
                         deleteMutationFn={(id: string) => deleteCourse(id)}
                         columns={['Title', 'Description', 'Lessons', 'XP']}
@@ -514,3 +517,5 @@ export default function AdminDashboardPage() {
         </div>
     );
 }
+
+    
