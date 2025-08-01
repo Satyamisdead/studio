@@ -1,34 +1,34 @@
+"use client";
 
-"use client"
-
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  addUser,
+  deleteUser,
+  updateUser,
+  getUsers,
+  type AppUser,
+  type NewUser,
+} from '@/lib/firebase/users';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
+    addCourse,
+    deleteCourse,
+    updateCourse,
+    getCourses,
+    type Course,
+    type NewCourseData,
+    type Lesson,
+} from '@/lib/firebase/courses';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from '@/components/ui/textarea';
+import { PlusCircle, Edit, Trash2, X, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,626 +39,199 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import Image from 'next/image';
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { Users, BookOpen, Briefcase, Building, PlusCircle, Pencil, Trash2, Home } from "lucide-react"
-import { QueryClient, QueryClientProvider, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getUsers, addUser, updateUser, deleteUser, AppUser } from '@/lib/firebase/users';
-import { getCourses, addCourse, updateCourse, deleteCourse, Course, Lesson } from '@/lib/firebase/courses';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
+type Item = AppUser | Course | { id: string, name: string } | { id: string, title: string };
 
-const chartData = [
-  { month: "January", users: 186 },
-  { month: "February", users: 305 },
-  { month: "March", users: 237 },
-  { month: "April", users: 173 },
-  { month: "May", users: 209 },
-  { month: "June", users: 250 },
-]
-
-const chartConfig = {
-  users: {
-    label: "Users",
-    color: "hsl(var(--chart-1))",
-  },
-}
-
-const mockData = {
-    jobs: [
-        { id: 'job_1', title: 'Frontend Developer', company: 'Tech Corp', status: 'Open' },
-    ],
-    business: [
-        { id: 'biz_1', name: 'Business Solution A', status: 'Active' },
-    ],
-    banners: [
-      { id: 'ban_1', title: 'Unlock Your Potential', image: 'https://placehold.co/1200x400.png' }
-    ],
-    hero: {
-      title: 'Welcome to Azoums',
-      description: 'Your one-stop platform for learning and growth.'
-    }
-}
-
-const queryClient = new QueryClient();
-
-export default function AdminDashboardPage() {
-    return (
-        <QueryClientProvider client={queryClient}>
-            <AdminDashboardContent />
-        </QueryClientProvider>
-    )
-}
-
-function AdminDashboardContent() {
-  const { data: users, isLoading: usersLoading } = useQuery({ queryKey: ['users'], queryFn: getUsers });
-  const { data: courses, isLoading: coursesLoading } = useQuery({ queryKey: ['courses'], queryFn: getCourses });
-  
-  return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold font-headline tracking-tight">Admin Dashboard</h1>
-        <p className="text-muted-foreground">
-          Manage your platform's users, courses, and more.
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {usersLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{users?.length ?? 0}</div>}
-            <p className="text-xs text-muted-foreground">+5.2% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-             {coursesLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{courses?.length ?? 0}</div>}
-            <p className="text-xs text-muted-foreground">+2 since last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockData.jobs.length}</div>
-            <p className="text-xs text-muted-foreground">+3 new jobs this week</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,250,345</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* User Growth Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>User Growth</CardTitle>
-          <CardDescription>January - June 2024</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer config={chartConfig} className="h-[250px] w-full">
-            <BarChart accessibilityLayer data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-              />
-              <YAxis />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent />}
-              />
-              <Bar dataKey="users" fill="var(--color-users)" radius={8} />
-            </BarChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-      
-      {/* Management Sections */}
-      <div className="space-y-6">
-        <HomePageManagementSection banners={mockData.banners} hero={mockData.hero} />
-        <ManagementSection title="Users Management" data={users} isLoading={usersLoading} type="user" />
-        <ManagementSection title="Course Management" data={courses} isLoading={coursesLoading} type="course" />
-        <ManagementSection title="Jobs Management" data={mockData.jobs} type="job" />
-        <ManagementSection title="Business Management" data={mockData.business} type="business" />
-        <StripeManagementSection />
-      </div>
-
-    </div>
-  )
-}
-
-interface ManagementSectionProps {
-    title: string;
-    data: any[] | undefined;
-    type: 'user' | 'course' | 'job' | 'business';
-    isLoading?: boolean;
-}
-
-function ManagementSection({ title, data, type, isLoading }: ManagementSectionProps) {
-    const headers = {
-        user: ['Name', 'Email', 'Role', 'Actions'],
-        course: ['Course Title', 'XP', 'Lessons', 'Actions'],
-        job: ['Job Title', 'Company', 'Status', 'Actions'],
-        business: ['Solution Name', 'Status', 'Actions']
-    }
-    
-    const [isFormOpen, setIsFormOpen] = React.useState(false);
-    const [selectedItem, setSelectedItem] = React.useState<any>(null);
-
-    const handleEditClick = (item: any) => {
-      setSelectedItem(item);
-      setIsFormOpen(true);
-    }
-    
-    const handleAddNewClick = () => {
-        setSelectedItem(null);
-        setIsFormOpen(true);
-    }
-
-    const renderRow = (item: any) => {
-        switch(type) {
-            case 'user': return <><TableCell>{item.name}</TableCell><TableCell>{item.email}</TableCell><TableCell><Badge>{item.role || 'User'}</Badge></TableCell></>;
-            case 'course': return <><TableCell>{item.title}</TableCell><TableCell>{item.xp}</TableCell><TableCell>{item.lessons?.length || 0}</TableCell></>;
-            case 'job': return <><TableCell>{item.title}</TableCell><TableCell>{item.company}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
-            case 'business': return <><TableCell>{item.name}</TableCell><TableCell><Badge>{item.status}</Badge></TableCell></>;
-        }
-    }
-
-    const renderForm = (item?: any) => {
-        switch(type) {
-            case 'user': return <UserForm currentUser={item} setOpen={setIsFormOpen} />;
-            case 'course': return <CourseForm currentCourse={item} setOpen={setIsFormOpen} />;
-            case 'job': return <JobForm job={item} setOpen={setIsFormOpen} />;
-            case 'business': return <BusinessForm business={item} setOpen={setIsFormOpen} />;
-        }
-    }
-    
+function ManagementSection<T extends Item>({
+  title,
+  description,
+  queryKey,
+  queryFn,
+  addMutationFn,
+  updateMutationFn,
+  deleteMutationFn,
+  columns,
+  renderRow,
+  FormComponent,
+}: {
+  title: string;
+  description: string;
+  queryKey: string;
+  queryFn: () => Promise<T[]>;
+  addMutationFn: (item: any) => Promise<any>;
+  updateMutationFn: (item: any) => Promise<any>;
+  deleteMutationFn: (id: string) => Promise<any>;
+  columns: string[];
+  renderRow: (item: T) => React.ReactNode;
+  FormComponent: React.FC<{
+    item?: T;
+    onSave: (data: any) => Promise<void>;
+    onClose: () => void;
+    isLoading: boolean;
+  }>;
+}) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const getDeleteMutation = () => {
-        switch(type) {
-            case 'user': return useMutation({
-                mutationFn: (id: string) => deleteUser(id),
-                onSuccess: () => {
-                    toast({ title: 'Success', description: 'User deleted successfully.' });
-                    queryClient.invalidateQueries({ queryKey: ['users'] });
-                },
-                onError: (error: Error) => {
-                    toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                }
-            });
-            case 'course': return useMutation({
-                mutationFn: (id: string) => deleteCourse(id),
-                onSuccess: () => {
-                    toast({ title: 'Success', description: 'Course deleted successfully.' });
-                    queryClient.invalidateQueries({ queryKey: ['courses'] });
-                },
-                onError: (error: Error) => {
-                    toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                }
-            });
-            default: return null;
-        }
-    }
+    const [isFormOpen, setFormOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<T | undefined>(undefined);
+    const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
-    const deleteMutation = getDeleteMutation();
 
-    const handleDelete = (id: string) => {
-        if (!deleteMutation) return;
-        deleteMutation.mutate(id);
-    }
-    
-    const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
-
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div className="space-y-1">
-                    <CardTitle>{title}</CardTitle>
-                    <CardDescription>View, add, edit, or delete entries.</CardDescription>
-                </div>
-                <Button size="sm" onClick={handleAddNewClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            {headers[type].map(h => <TableHead key={h}>{h}</TableHead>)}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            Array.from({ length: 3 }).map((_, i) => (
-                                <TableRow key={`skel-${i}`}>
-                                    {headers[type].map((h) => <TableCell key={h}><Skeleton className="h-5 w-full" /></TableCell>)}
-                                </TableRow>
-                            ))
-                        ) : data?.map(item => (
-                            <TableRow key={item.id}>
-                                {renderRow(item)}
-                                <TableCell className="space-x-2">
-                                    <Button variant="outline" size="icon" onClick={() => handleEditClick(item)} disabled={type === 'job' || type === 'business'}><Pencil className="h-4 w-4" /></Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon" disabled={!deleteMutation || (type === 'job' || type === 'business')}><Trash2 className="h-4 w-4" /></Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This action cannot be undone. This will permanently delete this {type}.
-                                            </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                  <DialogTitle>{selectedItem ? 'Edit' : 'Add New'} {typeTitle}</DialogTitle>
-                  <DialogDescription>
-                      {selectedItem ? 'Update the details for this entry.' : 'Fill in the details below to add a new entry.'}
-                  </DialogDescription>
-                  </DialogHeader>
-                  {renderForm(selectedItem)}
-              </DialogContent>
-          </Dialog>
-        </Card>
-    );
-}
-
-function UserForm({ currentUser, setOpen }: { currentUser?: AppUser, setOpen: (open: boolean) => void }) {
-    const [name, setName] = React.useState(currentUser?.name || '');
-    const [email, setEmail] = React.useState(currentUser?.email || '');
-    const [password, setPassword] = React.useState('');
-    const queryClient = useQueryClient();
-    const { toast } = useToast();
-
-    const { mutate: addUserMutation, isPending: isAdding } = useMutation({
-        mutationFn: addUser,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users']});
-            toast({ title: 'Success', description: 'User added successfully.' });
-            setOpen(false);
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error adding user', description: error.message, variant: 'destructive' });
-        }
+    const { data, isLoading, isError, error } = useQuery<T[], Error>({
+        queryKey: [queryKey],
+        queryFn: queryFn,
     });
 
-    const { mutate: updateUserMutation, isPending: isUpdating } = useMutation({
-        mutationFn: (userData: Omit<AppUser, 'role'>) => updateUser(userData.id, userData),
+    const mutationConfig = {
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['users']});
-            toast({ title: 'Success', description: 'User updated successfully.' });
-            setOpen(false);
+            queryClient.invalidateQueries({ queryKey: [queryKey] });
+            toast({ title: "Success", description: `${title} saved successfully.` });
+            setFormOpen(false);
+            setSelectedItem(undefined);
         },
         onError: (error: Error) => {
-            toast({ title: 'Error updating user', description: error.message, variant: 'destructive' });
-        }
+            toast({ title: "Error", description: `Failed to save: ${error.message}`, variant: "destructive" });
+        },
+    };
+
+    const addMutation = useMutation({
+        mutationFn: addMutationFn,
+        ...mutationConfig,
     });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name || !email) {
-            toast({ title: 'Error', description: 'Name and email are required.', variant: 'destructive' });
-            return;
-        }
-        
-        if (currentUser) {
-            updateUserMutation({ id: currentUser.id, name, email });
+    const updateMutation = useMutation({
+        mutationFn: (item: T) => updateMutationFn({ id: item.id, ...item }),
+        ...mutationConfig,
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteMutationFn,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [queryKey] });
+            toast({ title: "Deleted", description: "Item deleted successfully." });
+            setDeleteDialogOpen(false);
+            setItemToDelete(null);
+        },
+        onError: (error: Error) => {
+            toast({ title: "Error", description: `Failed to delete: ${error.message}`, variant: "destructive" });
+        },
+    });
+
+    const handleSave = async (itemData: T) => {
+        if (selectedItem) {
+            await updateMutation.mutateAsync({ ...selectedItem, ...itemData });
         } else {
-             if (!password) {
-                toast({ title: 'Error', description: 'Password is required for new users.', variant: 'destructive' });
-                return;
-            }
-            addUserMutation({ name, email, password });
+            await addMutation.mutateAsync(itemData);
         }
     };
     
-    const isPending = isAdding || isUpdating;
-    
-    return (
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-            <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} disabled={isPending} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isPending} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={currentUser ? "Leave blank to keep unchanged" : "Enter password"} disabled={isPending || !!currentUser} />
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary" disabled={isPending}>Close</Button>
-                </DialogClose>
-                <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
-            </DialogFooter>
-        </form>
-    );
-}
-
-function CourseForm({ currentCourse, setOpen }: { currentCourse?: Course, setOpen: (open: boolean) => void }) {
-    const [title, setTitle] = React.useState(currentCourse?.title || '');
-    const [description, setDescription] = React.useState(currentCourse?.description || '');
-    const [longDescription, setLongDescription] = React.useState(currentCourse?.longDescription || '');
-    const [xp, setXp] = React.useState(currentCourse?.xp || 0);
-    const [lessons, setLessons] = React.useState<Omit<Lesson, 'id'>[]>(currentCourse?.lessons || [{ title: '', duration: '', videoUrl: '' }]);
-    const queryClient = useQueryClient();
-    const { toast } = useToast();
-
-    const { mutate: courseMutation, isPending } = useMutation({
-        mutationFn: (courseData: any) => currentCourse ? updateCourse(currentCourse.id, courseData) : addCourse(courseData),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['courses']});
-            toast({ title: 'Success', description: `Course ${currentCourse ? 'updated' : 'added'} successfully.` });
-            setOpen(false);
-        },
-        onError: (error: Error) => {
-            toast({ title: 'Error', description: error.message, variant: 'destructive' });
-        }
-    });
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const courseData = { title, description, longDescription, xp: Number(xp), providesCertificate: true, lessons };
-        courseMutation(courseData);
+    const handleAddNew = () => {
+        setSelectedItem(undefined);
+        setFormOpen(true);
     };
 
-    const handleLessonChange = (index: number, field: keyof Lesson, value: string) => {
-        const newLessons = [...lessons];
-        newLessons[index][field] = value;
-        setLessons(newLessons);
-    }
-    const addLesson = () => setLessons([...lessons, { title: '', duration: '', videoUrl: '' }]);
-    const removeLesson = (index: number) => {
-        if (lessons.length > 1) {
-            setLessons(lessons.filter((_, i) => i !== index));
+    const handleEdit = (item: T) => {
+        setSelectedItem(item);
+        setFormOpen(true);
+    };
+
+    const handleDeleteClick = (id: string) => {
+        setItemToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (itemToDelete) {
+           await deleteMutation.mutateAsync(itemToDelete);
         }
     };
     
-    return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="courseName">Course Title</Label>
-                <Input id="courseName" placeholder="e.g., Learn AI" value={title} onChange={(e) => setTitle(e.target.value)} disabled={isPending} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="courseDescription">Short Description</Label>
-                <Textarea id="courseDescription" placeholder="A short, catchy description for the course card." value={description} onChange={(e) => setDescription(e.target.value)} disabled={isPending} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="courseLongDescription">Full Description</Label>
-                <Textarea id="courseLongDescription" placeholder="A detailed description for the course page." value={longDescription} onChange={(e) => setLongDescription(e.target.value)} rows={5} disabled={isPending} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="xp">XP Reward</Label>
-                <Input id="xp" type="number" placeholder="e.g., 150" value={xp} onChange={(e) => setXp(Number(e.target.value))} disabled={isPending} />
-            </div>
-            <div className="space-y-2">
-                <Label>Lessons</Label>
-                {lessons.map((lesson, index) => (
-                     <div key={index} className="flex items-end gap-2 p-2 border rounded-md">
-                       <div className="flex-grow space-y-2">
-                           <Label className="text-xs text-muted-foreground">Lesson {index + 1}</Label>
-                           <Input placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(index, 'title', e.target.value)} disabled={isPending} />
-                           <Input placeholder="Duration (e.g., 15m)" value={lesson.duration} onChange={(e) => handleLessonChange(index, 'duration', e.target.value)} disabled={isPending} />
-                           <Input placeholder="Video URL" value={lesson.videoUrl} onChange={(e) => handleLessonChange(index, 'videoUrl', e.target.value)} disabled={isPending} />
-                       </div>
-                       <Button type="button" variant="destructive" size="icon" onClick={() => removeLesson(index)} disabled={lessons.length === 1 || isPending}><Trash2 className="h-4 w-4"/></Button>
-                    </div>
-                ))}
-               
-                <Button type="button" variant="outline" size="sm" onClick={addLesson} disabled={isPending}><PlusCircle className="mr-2 h-4 w-4"/>Add Lesson</Button>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary" disabled={isPending}>Close</Button>
-                </DialogClose>
-                <Button type="submit" disabled={isPending}>{isPending ? 'Saving...' : 'Save Changes'}</Button>
-            </DialogFooter>
-        </form>
-    );
-}
-
-
-function JobForm({ job, setOpen }: { job?: any, setOpen: (open: boolean) => void }) {
-    return (
-        <form className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="jobTitle">Job Title</Label>
-                <Input id="jobTitle" placeholder="e.g., Frontend Developer" defaultValue={job?.title} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input id="companyName" placeholder="e.g., Tech Corp" defaultValue={job?.company} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="jobDescription">Description</Label>
-                <Textarea id="jobDescription" placeholder="Job responsibilities include..." defaultValue={job?.description} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="payment">Payment/Salary</Label>
-                <Input id="payment" placeholder="e.g., $80,000/year" defaultValue={job?.payment} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="xp">XP Reward</Label>
-                <Input id="xp" type="number" placeholder="e.g., 150" defaultValue={job?.xp} />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="companyLogo">Company Logo</Label>
-                <Input id="companyLogo" type="file" />
-            </div>
-             <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">Close</Button>
-                </DialogClose>
-                <Button type="submit">Save Changes</Button>
-            </DialogFooter>
-        </form>
-    )
-}
-
-function BusinessForm({ business, setOpen }: { business?: any, setOpen: (open: boolean) => void}) {
-    return (
-        <form className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="solutionName">Solution Name</Label>
-                <Input id="solutionName" placeholder="e.g., Business Solution A" defaultValue={business?.name} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="solutionDescription">Description</Label>
-                <Textarea id="solutionDescription" placeholder="Describe the business solution..." defaultValue={business?.description}/>
-            </div>
-            <DialogFooter>
-                <DialogClose asChild>
-                    <Button type="button" variant="secondary">Close</Button>
-                </DialogClose>
-                <Button type="submit">Save Changes</Button>
-            </DialogFooter>
-        </form>
-    )
-}
-
-
-function StripeManagementSection() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Stripe Payment Gateway</CardTitle>
-                <CardDescription>Manage your Stripe API keys. Changes here require backend updates to take effect.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="pk">Public Key</Label>
-                    <Input id="pk" placeholder="pk_live_********************" defaultValue="pk_test_12345" />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="sk">Private Key</Label>
-                    <Input id="sk" type="password" placeholder="sk_live_********************" defaultValue="sk_test_12345" />
-                </div>
-                <Button>Update Keys</Button>
-            </CardContent>
-        </Card>
-    );
-}
-
-function HomePageManagementSection({ banners, hero }: { banners: any[], hero: any }) {
-    const [isBannerFormOpen, setIsBannerFormOpen] = React.useState(false);
-    const [selectedBanner, setSelectedBanner] = React.useState<any>(null);
-
-    const handleEditClick = (banner: any) => {
-        setSelectedBanner(banner);
-        setIsBannerFormOpen(true);
-    };
-
-    const handleAddNewClick = () => {
-        setSelectedBanner(null);
-        setIsBannerFormOpen(true);
-    }
-    
-    return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div className="space-y-1">
-                    <CardTitle className="flex items-center"><Home className="mr-2 h-5 w-5"/>Home Page Management</CardTitle>
-                    <CardDescription>Manage banners and hero section content.</CardDescription>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <CardTitle>{title}</CardTitle>
+                        <CardDescription>{description}</CardDescription>
+                    </div>
+                    <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+                        <DialogTrigger asChild>
+                             <Button onClick={handleAddNew}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add New
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>{selectedItem ? 'Edit' : 'Add New'} {title.slice(0, -1)}</DialogTitle>
+                            </DialogHeader>
+                            <FormComponent
+                                item={selectedItem}
+                                onSave={handleSave}
+                                onClose={() => setFormOpen(false)}
+                                isLoading={addMutation.isPending || updateMutation.isPending}
+                            />
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-                {/* Hero Section */}
-                <form className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-semibold">Hero Section</h3>
-                    <div className="space-y-2">
-                        <Label htmlFor="heroTitle">Hero Title</Label>
-                        <Input id="heroTitle" defaultValue={hero.title} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="heroDescription">Hero Description</Label>
-                        <Textarea id="heroDescription" defaultValue={hero.description} />
-                    </div>
-                    <Button size="sm" type="submit">Save Hero Content</Button>
-                </form>
-
-                {/* Banners Section */}
-                <div className="space-y-4 p-4 border rounded-lg">
-                    <div className="flex justify-between items-center">
-                        <h3 className="font-semibold">Banners</h3>
-                         <Button size="sm" onClick={handleAddNewClick}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add New Banner
-                        </Button>
-                    </div>
-                    <Table>
+            <CardContent>
+                <div className="border rounded-md">
+                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Banner Title</TableHead>
-                                <TableHead>Image</TableHead>
+                                {columns.map((col, i) => <TableHead key={i}>{col}</TableHead>)}
                                 <TableHead>Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {banners.map((banner) => (
-                                <TableRow key={banner.id}>
-                                    <TableCell>{banner.title}</TableCell>
-                                    <TableCell><img src={banner.image} alt={banner.title} className="h-10 w-auto rounded-md" /></TableCell>
+                            {isLoading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        {columns.map((_, j) => (
+                                            <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>
+                                        ))}
+                                         <TableCell><Skeleton className="h-8 w-[72px]" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : isError ? (
+                                <TableRow>
+                                    <TableCell colSpan={columns.length + 1} className="text-center text-destructive">
+                                        Error loading data: {error.message}
+                                    </TableCell>
+                                </TableRow>
+                            ) : !data || data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={columns.length + 1} className="text-center">No data found.</TableCell>
+                                </TableRow>
+                            ) : data.map(item => (
+                                <TableRow key={item.id}>
+                                    {renderRow(item)}
                                     <TableCell className="space-x-2">
-                                        <Button variant="outline" size="icon" onClick={() => handleEditClick(banner)}><Pencil className="h-4 w-4" /></Button>
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild><Button variant="destructive" size="icon"><Trash2 className="h-4 w-4" /></Button></AlertDialogTrigger>
+                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <AlertDialog open={isDeleteDialogOpen && itemToDelete === item.id} onOpenChange={(open) => !open && setDeleteDialogOpen(false)}>
+                                            <AlertDialogTrigger asChild>
+                                                 <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(item.id)}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                    <AlertDialogDescription>This will permanently delete this banner.</AlertDialogDescription>
+                                                    <AlertDialogDescription>
+                                                        This action cannot be undone. This will permanently delete the item.
+                                                    </AlertDialogDescription>
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                                    <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={confirmDelete} disabled={deleteMutation.isPending}>
+                                                        {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Delete'}
+                                                    </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
@@ -668,36 +241,276 @@ function HomePageManagementSection({ banners, hero }: { banners: any[], hero: an
                         </TableBody>
                     </Table>
                 </div>
-                 <Dialog open={isBannerFormOpen} onOpenChange={setIsBannerFormOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{selectedBanner ? 'Edit' : 'Add New'} Banner</DialogTitle>
-                        </DialogHeader>
-                        <BannerForm banner={selectedBanner} setOpen={setIsBannerFormOpen} />
-                    </DialogContent>
-                </Dialog>
             </CardContent>
         </Card>
-    )
+    );
 }
 
-function BannerForm({ banner, setOpen }: { banner?: any, setOpen: (open: boolean) => void }) {
+// UserForm Component
+const UserForm = ({ item, onSave, onClose, isLoading }: { item?: AppUser, onSave: (data: NewUser) => Promise<void>, onClose: () => void, isLoading: boolean }) => {
+    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+
+    useEffect(() => {
+        if (item) {
+            setFormData({ name: item.name, email: item.email, password: '' });
+        } else {
+            setFormData({ name: '', email: '', password: '' });
+        }
+    }, [item]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const dataToSave: NewUser = { name: formData.name, email: formData.email };
+        if (formData.password) {
+            dataToSave.password = formData.password;
+        }
+        await onSave(dataToSave);
+    };
+
     return (
-         <form className="space-y-4 py-4">
-            <div className="space-y-2">
-                <Label htmlFor="bannerTitle">Banner Title</Label>
-                <Input id="bannerTitle" placeholder="e.g., Unlock Your Potential" defaultValue={banner?.title}/>
+       <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">Name</Label>
+                    <Input id="name" value={formData.name} onChange={handleChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">Email</Label>
+                    <Input id="email" type="email" value={formData.email} onChange={handleChange} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="password" className="text-right">Password</Label>
+                    <Input id="password" type="password" placeholder={item ? 'Leave blank to keep unchanged' : ''} value={formData.password} onChange={handleChange} className="col-span-3" />
+                </div>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="bannerImage">Banner Image</Label>
-                <Input id="bannerImage" type="file" />
-                {banner?.image && <img src={banner.image} alt="Current banner" className="mt-2 h-20 w-auto rounded-md" />}
-            </div>
-             <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Close</Button></DialogClose>
-                <Button type="submit">Save Changes</Button>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+                <Button type="submit" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}
+                </Button>
             </DialogFooter>
         </form>
-    )
-}
+    );
+};
 
+// CourseForm Component
+const CourseForm = ({ item, onSave, onClose, isLoading }: { item?: Course, onSave: (data: NewCourseData) => Promise<void>, onClose: () => void, isLoading: boolean }) => {
+    const [formData, setFormData] = useState<Omit<NewCourseData, 'id'>>({
+        title: '',
+        description: '',
+        longDescription: '',
+        lessons: [{ title: '', duration: '', videoUrl: '' }],
+        xp: 0,
+        providesCertificate: false,
+    });
+
+    useEffect(() => {
+        if (item) {
+            setFormData({
+                title: item.title,
+                description: item.description,
+                longDescription: item.longDescription,
+                lessons: item.lessons,
+                xp: item.xp,
+                providesCertificate: item.providesCertificate
+            });
+        } else {
+             setFormData({
+                title: '',
+                description: '',
+                longDescription: '',
+                lessons: [{ title: '', duration: '', videoUrl: '' }],
+                xp: 0,
+                providesCertificate: false,
+            });
+        }
+    }, [item]);
+
+    const handleLessonChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const newLessons = [...formData.lessons];
+        newLessons[index] = { ...newLessons[index], [e.target.id]: e.target.value };
+        setFormData(prev => ({ ...prev, lessons: newLessons }));
+    };
+
+    const addLesson = () => {
+        setFormData(prev => ({ ...prev, lessons: [...prev.lessons, { title: '', duration: '', videoUrl: '' }] }));
+    };
+
+    const removeLesson = (index: number) => {
+        const newLessons = formData.lessons.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, lessons: newLessons }));
+    };
+    
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await onSave(formData);
+    };
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
+                <div className="space-y-2">
+                    <Label htmlFor="title">Course Title</Label>
+                    <Input id="title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="description">Short Description</Label>
+                    <Textarea id="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="longDescription">Long Description</Label>
+                    <Textarea id="longDescription" value={formData.longDescription} onChange={(e) => setFormData({...formData, longDescription: e.target.value})} rows={5} />
+                </div>
+                <div className="space-y-2">
+                    <Label>Lessons</Label>
+                    {formData.lessons.map((lesson, index) => (
+                        <div key={index} className="flex items-start gap-2 p-2 border rounded-md relative">
+                            <div className="flex-grow space-y-2">
+                                <Input id="title" placeholder="Lesson Title" value={lesson.title} onChange={(e) => handleLessonChange(index, e)} />
+                                <Input id="duration" placeholder="Duration (e.g., 15m)" value={lesson.duration} onChange={(e) => handleLessonChange(index, e)} />
+                                <Input id="videoUrl" placeholder="Video URL" value={lesson.videoUrl || ''} onChange={(e) => handleLessonChange(index, e)} />
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeLesson(index)} className="absolute top-1 right-1">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={addLesson}>Add Lesson</Button>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="xp">XP Points</Label>
+                    <Input id="xp" type="number" value={formData.xp} onChange={(e) => setFormData({...formData, xp: Number(e.target.value)})} />
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Input type="checkbox" id="providesCertificate" checked={formData.providesCertificate} onChange={(e) => setFormData({...formData, providesCertificate: e.target.checked})} className="h-4 w-4" />
+                    <Label htmlFor="providesCertificate">Provides Certificate</Label>
+                </div>
+            </div>
+             <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+                <Button type="submit" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Save Changes'}
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+};
+
+// AdminDashboardPage is the main component for the admin page
+export default function AdminDashboardPage() {
+    return (
+        <div className="flex flex-col min-h-screen w-full">
+            <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+                <div className="flex items-center">
+                    <h1 className="font-semibold text-lg md:text-2xl">Admin Dashboard</h1>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                    <ManagementSection<AppUser>
+                        title="Users Management"
+                        description="Manage all registered users."
+                        queryKey="users"
+                        queryFn={getUsers}
+                        addMutationFn={(user: NewUser) => addUser(user)}
+                        updateMutationFn={(user: AppUser) => updateUser(user.id, user)}
+                        deleteMutationFn={(id: string) => deleteUser(id)}
+                        columns={['Name', 'Email', 'Role']}
+                        renderRow={(user) => (
+                            <>
+                                <TableCell>{user.name}</TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>{user.role}</TableCell>
+                            </>
+                        )}
+                        FormComponent={UserForm}
+                    />
+                    <ManagementSection<Course>
+                        title="Courses Management"
+                        description="Manage all courses."
+                        queryKey="courses"
+                        queryFn={getCourses}
+                        addMutationFn={(course: NewCourseData) => addCourse(course)}
+                        updateMutationFn={(course: Course) => updateCourse(course.id, course)}
+                        deleteMutationFn={(id: string) => deleteCourse(id)}
+                        columns={['Title', 'Description', 'Lessons', 'XP']}
+                        renderRow={(course) => (
+                            <>
+                                <TableCell>{course.title}</TableCell>
+                                <TableCell>{course.description}</TableCell>
+                                <TableCell>{course.lessons.length}</TableCell>
+                                <TableCell>{course.xp}</TableCell>
+                            </>
+                        )}
+                        FormComponent={CourseForm}
+                    />
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Jobs Management</CardTitle>
+                            <CardDescription>Manage all job listings.</CardDescription>
+                        </CardHeader>
+                        <CardContent><p>Job management UI coming soon.</p></CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Business Solutions</CardTitle>
+                            <CardDescription>Manage business solutions page.</CardDescription>
+                        </CardHeader>
+                        <CardContent><p>Business solutions management UI coming soon.</p></CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Home Page Management</CardTitle>
+                            <CardDescription>Edit hero section and banners.</CardDescription>
+                        </CardHeader>
+                         <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="heroTitle">Hero Title</Label>
+                                <Input id="heroTitle" defaultValue="Unlock Your Potential" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="heroDescription">Hero Description</Label>
+                                <Textarea id="heroDescription" defaultValue="Join thousands of learners and professionals on Azoums to master new skills." />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Banners</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                     <div className="relative aspect-video border rounded-md overflow-hidden">
+                                        <Image src="https://placehold.co/1200x400.png" alt="Banner 1" fill className="object-cover" />
+                                    </div>
+                                    <div className="relative aspect-video border rounded-md overflow-hidden">
+                                        <Image src="https://placehold.co/1200x400.png" alt="Banner 2" fill className="object-cover" />
+                                    </div>
+                                    <Button variant="outline" className="aspect-video w-full h-full flex items-center justify-center">
+                                        <PlusCircle className="h-8 w-8 text-muted-foreground" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <Button>Save Home Page Changes</Button>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Stripe Payment Gateway</CardTitle>
+                            <CardDescription>Manage your Stripe API keys. Changes require backend updates.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="pk">Public Key</Label>
+                                <Input id="pk" placeholder="pk_live_..." defaultValue={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""} />
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="sk">Private Key</Label>
+                                <Input id="sk" type="password" placeholder="sk_live_..." defaultValue="**************" />
+                            </div>
+                            <Button>Update Keys</Button>
+                        </CardContent>
+                    </Card>
+                </div>
+            </main>
+        </div>
+    );
+}
