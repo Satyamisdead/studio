@@ -62,12 +62,13 @@ export default function UpgradePage() {
         body: JSON.stringify({ priceId, userId: user.uid, userEmail: user.email }),
       });
 
+      const body = await res.json();
+
       if (!res.ok) {
-        const errorBody = await res.json();
-        throw new Error(errorBody.message || `Failed to create checkout session`);
+        throw new Error(body.error.message || `Failed to create checkout session`);
       }
       
-      const { sessionId } = await res.json();
+      const { sessionId } = body;
 
       if (!sessionId) {
           throw new Error("Received an empty session ID from the server.");
