@@ -17,7 +17,7 @@ export default function ClientLayout({
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
     const currentYear = new Date().getFullYear();
-    const [isOverlayVisible, setIsOverlayVisible] = useState(true);
+    const [isOverlayVisible, setIsOverlayVisible] = useState(false);
 
     if (isAdminPage) {
       return (
