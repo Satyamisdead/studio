@@ -6,6 +6,8 @@ import AppSidebar from '@/components/AppSidebar';
 import BottomNav from '@/components/BottomNav';
 import { Toaster } from "@/components/ui/toaster";
 import PwaInstallPrompt from '@/components/PwaInstallPrompt';
+import ServerErrorOverlay from '@/components/ServerErrorOverlay';
+import { useState } from 'react';
 
 export default function ClientLayout({
     children,
@@ -15,12 +17,14 @@ export default function ClientLayout({
     const pathname = usePathname();
     const isAdminPage = pathname.startsWith('/admin');
     const currentYear = new Date().getFullYear();
+    const [isOverlayVisible, setIsOverlayVisible] = useState(true);
 
     if (isAdminPage) {
       return (
         <>
             {children}
             <Toaster />
+            <ServerErrorOverlay isVisible={isOverlayVisible} />
         </>
       );
     }
@@ -43,6 +47,7 @@ export default function ClientLayout({
         <BottomNav />
         <Toaster />
         <PwaInstallPrompt />
+        <ServerErrorOverlay isVisible={isOverlayVisible} />
       </>
     );
 }
