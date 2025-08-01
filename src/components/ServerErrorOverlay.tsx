@@ -2,7 +2,6 @@
 "use client";
 
 import React from 'react';
-import { ServerCrash } from 'lucide-react';
 
 interface ServerErrorOverlayProps {
   isVisible: boolean;
@@ -20,14 +19,25 @@ export default function ServerErrorOverlay({
   }
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-black z-[9999] flex items-center justify-center text-center p-4">
-      <div className="flex flex-col items-center gap-4 p-8 rounded-lg bg-background/80 backdrop-blur-sm ring-1 ring-border">
-        <ServerCrash className="h-16 w-16 text-destructive" />
-        <h1 className="text-3xl font-bold font-headline text-foreground">{message}</h1>
+    <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'white',
+        color: 'black',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        fontFamily: 'sans-serif',
+    }}>
+        <h1 style={{ fontSize: '2rem', margin: '0 0 1rem 0' }}>{message}</h1>
         {errorCode && (
-          <p className="text-lg text-muted-foreground">Error Code: {errorCode}</p>
+          <p style={{ fontSize: '1.2rem', margin: 0 }}>Error Code: {errorCode}</p>
         )}
-      </div>
     </div>
   );
 }
