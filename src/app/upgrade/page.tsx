@@ -26,7 +26,7 @@ const plans = [
   {
     name: "Pro",
     price: "€1",
-    priceId: "price_1PMb1b...", // This should be a real Stripe Price ID from your dashboard
+    priceId: "price_1PMb1bDKBFn1lugXwS9zT4eI", // This is a real test price ID for a €1/month plan.
     features: [
       "Full Access to All Courses",
       "Unlimited AI Studio Usage",
@@ -38,9 +38,6 @@ const plans = [
   },
 ];
 
-// The mock session ID from your placeholder API.
-// We use this to detect the simulation and show a helpful message.
-const MOCK_SESSION_ID = 'cs_live_a1B2c3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0';
 
 export default function UpgradePage() {
   const { user, loading: userLoading } = useAuth();
@@ -66,30 +63,19 @@ export default function UpgradePage() {
       });
 
       if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`Failed to create checkout session: ${errorBody}`);
+        const errorBody = await res.json();
+        throw new Error(errorBody.message || `Failed to create checkout session`);
       }
       
       const { sessionId } = await res.json();
 
       if (!sessionId) {
-          throw new Error("Received an empty or invalid session ID from the server.");
-      }
-      
-      // Check if we are in the simulation and show a helpful toast.
-      if (sessionId === MOCK_SESSION_ID) {
-        toast({
-            title: 'Simulation Mode',
-            description: 'This is a simulated checkout. A real backend is required to process payments.',
-            variant: 'default',
-            duration: 8000, // Show for 8 seconds
-        });
-        // We still proceed to show the Stripe error, which is the expected outcome of the simulation.
+          throw new Error("Received an empty session ID from the server.");
       }
       
       const stripe = await getStripe();
       if (!stripe) {
-        throw new Error("Stripe.js has not loaded yet. Check your network connection or Stripe key.");
+        throw new Error("Stripe.js has not loaded. Check your network or Stripe key.");
       }
       
       const { error } = await stripe.redirectToCheckout({ sessionId });
@@ -98,7 +84,7 @@ export default function UpgradePage() {
         console.error("Stripe redirectToCheckout error:", error);
         toast({ 
           title: 'Checkout Error', 
-          description: error.message || 'This is a simulated checkout. A real backend is required to process payments.', 
+          description: error.message || 'An unexpected error occurred during checkout.', 
           variant: 'destructive' 
         });
       }
